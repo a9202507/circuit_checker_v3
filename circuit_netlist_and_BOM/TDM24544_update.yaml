@@ -1,0 +1,25 @@
+component: TDM24544
+gnd_nets:
+- GND
+- PGND
+rules:
+- type: pin_to_pin_connection
+  pin1: '16'
+  pin2: '22'
+  severity: error
+  description: pin16 需跟 pin22 相連
+- type: pin_to_gnd_cap
+  pin: '16'
+  capacitance: 2.2uF
+  severity: error
+  description: pin16 需接 2.2uF cap to GND
+- type: pin_to_pin_connection
+  pin1: '38'
+  pin2: '44'
+  severity: error
+  description: pin38 需跟 pin44 相連
+- type: pin_to_gnd_cap
+  pin: '38'
+  capacitance: 2.2uF
+  severity: error
+  description: pin38 需接 2.2uF cap to GND

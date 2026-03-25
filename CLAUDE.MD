@@ -13,7 +13,8 @@ python 請用uv 管理環境，且使用3.12
 # 功能細節
 ## 規則 yaml產生器
 以元件名稱命名 例如 XDPE1E496A.yaml 
-* 在元件下可以設定很多條規則，例如 
+* 在元件下可以設定很多條規則，
+* XDPE1E496A.yaml 
     * 總pin數為53pin or 52pins ，若不符合則error. 
     * pin52 需接1uF cap to GND ，若不符合則warning.
     * pin52 需接0.1uF cap to GND，若不符合則warning.

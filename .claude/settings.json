@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Read(//Users/home/.claude/projects/-Users-home-circuit-checker-v3/memory/**)",
+      "Bash(lsof -ti:8000,5173,5174,5175)",
+      "Bash(xargs kill:*)"
+    ]
+  }
+}

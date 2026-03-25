@@ -1,0 +1,41 @@
+component: XDPE1E496A
+gnd_nets:
+  - GND
+  - PGND
+
+rules:
+  - type: pin_count
+    count: [52, 53]
+    severity: error
+    description: "總 PIN 數必須為 52 或 53"
+
+  - type: pin_to_gnd_cap
+    pin: "52"
+    capacitance: "1uF"
+    severity: warning
+    description: "pin52 需接 1uF cap to GND"
+
+  - type: pin_to_gnd_cap
+    pin: "52"
+    capacitance: "0.1uF"
+    severity: warning
+    description: "pin52 需接 0.1uF cap to GND"
+
+  - type: pin_to_gnd_cap
+    pin: "51"
+    capacitance: "1uF"
+    severity: warning
+    description: "pin51 需接 1uF cap to GND"
+
+  - type: pin_to_gnd_cap
+    pin: "51"
+    capacitance: "0.1uF"
+    severity: warning
+    description: "pin51 需接 0.1uF cap to GND"
+
+  - type: pin_to_pin_cap
+    pin1: "27"
+    pin2: "28"
+    capacitance: "220pF"
+    severity: error
+    description: "pin27 與 pin28 之間需有 220pF cap"
