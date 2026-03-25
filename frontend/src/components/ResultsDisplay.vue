@@ -126,7 +126,7 @@ async function exportZip() {
 </template>
 
 <style scoped>
-.results-page { max-width: 1000px; }
+.results-page { max-width: 1000px; margin: 0 auto; }
 
 .top-bar {
   display: flex;

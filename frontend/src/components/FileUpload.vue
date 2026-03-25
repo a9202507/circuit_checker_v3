@@ -223,5 +223,5 @@ h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; 
 .status-ok  { font-size: 12px; color: var(--primary); margin-top: 6px; font-weight: 500; }
 .status-err { font-size: 12px; color: #E84040; margin-top: 6px; }
 
-.actions { margin-top: 4px; }
+.actions { margin-top: 4px; display: flex; justify-content: flex-end; }
 </style>

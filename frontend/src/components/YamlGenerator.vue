@@ -13,6 +13,7 @@ const componentName  = ref('')
 const gndNetsInput   = ref('GND, PGND')
 const rules          = reactive([])
 const loadFromSession = ref('')
+const yamlFileInput  = ref(null)
 
 function addRule() {
   rules.push({
@@ -118,7 +119,7 @@ function applyYamlData(data) {
   for (const r of data.rules || []) {
     rules.push({
       type: r.type, severity: r.severity || 'error', description: r.description || '',
-      count: (r.count || []).join(', '), pin1: r.pin1 || '', pin2: r.pin2 || '',
+      count: [].concat(r.count || []).join(', '), pin1: r.pin1 || '', pin2: r.pin2 || '',
       pin: r.pin || '', capacitance: r.capacitance || '',
       net: r.net || '', min_value: r.min_value || '', max_value: r.max_value || '',
     })
@@ -141,8 +142,8 @@ function applyYamlData(data) {
         <option v-for="f in store.yamlFiles" :key="f" :value="f">{{ f }}</option>
       </select>
       <span class="sep">or</span>
-      <input type="file" id="yaml-load" accept=".yaml,.yml" hidden @change="loadFromFile" />
-      <button class="btn btn-ghost sm" @click="() => document.getElementById('yaml-load').click()">
+      <input ref="yamlFileInput" type="file" accept=".yaml,.yml" hidden @change="loadFromFile" />
+      <button class="btn btn-ghost sm" @click="yamlFileInput.click()">
         {{ t.yaml.loadLocal }}
       </button>
     </div>
@@ -281,7 +282,7 @@ function applyYamlData(data) {
 </template>
 
 <style scoped>
-.yaml-page { max-width: 860px; }
+.yaml-page { max-width: 860px; margin: 0 auto; }
 
 .page-header { margin-bottom: 20px; }
 h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
@@ -388,6 +389,6 @@ h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; 
 }
 
 /* Actions */
-.actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .sm { padding: 6px 14px; font-size: 12px; }
 </style>

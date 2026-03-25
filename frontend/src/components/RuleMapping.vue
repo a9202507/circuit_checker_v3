@@ -143,7 +143,7 @@ async function runChecks() {
 </template>
 
 <style scoped>
-.mapping-page { max-width: 900px; }
+.mapping-page { max-width: 900px; margin: 0 auto; }
 
 .page-header { margin-bottom: 20px; }
 h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
