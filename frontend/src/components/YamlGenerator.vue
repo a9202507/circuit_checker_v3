@@ -21,6 +21,7 @@ function addRule() {
     description: '',
     count: '52, 53',
     pin1: '', pin2: '', pin: '', capacitance: '',
+    net: '', min_value: '', max_value: '',
   })
 }
 
@@ -37,6 +38,13 @@ function buildRuleObj(r) {
     base.pin = r.pin.trim(); base.capacitance = r.capacitance.trim()
   } else if (r.type === 'pin_to_pin_cap') {
     base.pin1 = r.pin1.trim(); base.pin2 = r.pin2.trim(); base.capacitance = r.capacitance.trim()
+  } else if (r.type === 'pin_floating') {
+    base.pin = r.pin.trim()
+  } else if (r.type === 'pin_to_net_resistor' || r.type === 'pin_to_net_capacitor' || r.type === 'pin_to_net_inductor') {
+    base.pin = r.pin.trim()
+    base.net = r.net.trim()
+    if (r.min_value.trim()) base.min_value = r.min_value.trim()
+    if (r.max_value.trim()) base.max_value = r.max_value.trim()
   }
   return base
 }
@@ -112,6 +120,7 @@ function applyYamlData(data) {
       type: r.type, severity: r.severity || 'error', description: r.description || '',
       count: (r.count || []).join(', '), pin1: r.pin1 || '', pin2: r.pin2 || '',
       pin: r.pin || '', capacitance: r.capacitance || '',
+      net: r.net || '', min_value: r.min_value || '', max_value: r.max_value || '',
     })
   }
 }
@@ -216,6 +225,34 @@ function applyYamlData(data) {
           <div class="rf short">
             <label>{{ t.yaml.fields.cap }}</label>
             <input v-model="r.capacitance" class="a-input" :placeholder="t.yaml.fields.capPh" />
+          </div>
+        </template>
+
+        <template v-else-if="r.type === 'pin_floating'">
+          <div class="rf short">
+            <label>{{ t.yaml.fields.pin }}</label>
+            <input v-model="r.pin" class="a-input" placeholder="e.g. 5" />
+          </div>
+        </template>
+
+        <template v-else-if="r.type === 'pin_to_net_resistor' || r.type === 'pin_to_net_capacitor' || r.type === 'pin_to_net_inductor'">
+          <div class="rf short">
+            <label>{{ t.yaml.fields.pin }}</label>
+            <input v-model="r.pin" class="a-input" placeholder="e.g. 5" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.net }}</label>
+            <input v-model="r.net" class="a-input" :placeholder="t.yaml.fields.netPh" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.minValue }}</label>
+            <input v-model="r.min_value" class="a-input"
+              :placeholder="r.type === 'pin_to_net_inductor' ? t.yaml.fields.indPh : r.type === 'pin_to_net_resistor' ? t.yaml.fields.resPh : t.yaml.fields.capPh" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.maxValue }}</label>
+            <input v-model="r.max_value" class="a-input"
+              :placeholder="r.type === 'pin_to_net_inductor' ? t.yaml.fields.indPh : r.type === 'pin_to_net_resistor' ? t.yaml.fields.resPh : t.yaml.fields.capPh" />
           </div>
         </template>
 

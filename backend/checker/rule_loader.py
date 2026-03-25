@@ -44,8 +44,54 @@ class PinToPinConnectionRule(BaseModel):
     description: str = ""
 
 
+class PinFloatingRule(BaseModel):
+    type: Literal["pin_floating"]
+    pin: str
+    severity: str = "error"
+    description: str = ""
+
+
+class PinToNetResistorRule(BaseModel):
+    type: Literal["pin_to_net_resistor"]
+    pin: str
+    net: str
+    min_value: str | None = None  # e.g. "10k"
+    max_value: str | None = None  # e.g. "100k"
+    severity: str = "error"
+    description: str = ""
+
+
+class PinToNetCapacitorRule(BaseModel):
+    type: Literal["pin_to_net_capacitor"]
+    pin: str
+    net: str
+    min_value: str | None = None  # e.g. "100nF"
+    max_value: str | None = None  # e.g. "10uF"
+    severity: str = "error"
+    description: str = ""
+
+
+class PinToNetInductorRule(BaseModel):
+    type: Literal["pin_to_net_inductor"]
+    pin: str
+    net: str
+    min_value: str | None = None  # e.g. "10uH"
+    max_value: str | None = None  # e.g. "100uH"
+    severity: str = "error"
+    description: str = ""
+
+
 Rule = Annotated[
-    Union[PinCountRule, PinToGndCapRule, PinToPinCapRule, PinToPinConnectionRule],
+    Union[
+        PinCountRule,
+        PinToGndCapRule,
+        PinToPinCapRule,
+        PinToPinConnectionRule,
+        PinFloatingRule,
+        PinToNetResistorRule,
+        PinToNetCapacitorRule,
+        PinToNetInductorRule,
+    ],
     Field(discriminator="type"),
 ]
 

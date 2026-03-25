@@ -9,8 +9,14 @@ from .rule_loader import (
     PinToGndCapRule,
     PinToPinCapRule,
     PinToPinConnectionRule,
+    PinFloatingRule,
+    PinToNetResistorRule,
+    PinToNetCapacitorRule,
+    PinToNetInductorRule,
 )
 
+
+# ── Value normalization ────────────────────────────────────────────────────────
 
 def normalize_capacitance(value_str: str) -> float | None:
     """Convert capacitance string (e.g. '2.2uF', '220pF') to farads."""
@@ -24,6 +30,30 @@ def normalize_capacitance(value_str: str) -> float | None:
     return number * units[unit]
 
 
+def normalize_resistance(value_str: str) -> float | None:
+    """Convert resistance string (e.g. '10k', '4.7M', '100R', '100') to ohms."""
+    s = value_str.strip().lower().replace(" ", "").replace("ω", "").replace("ohm", "")
+    m = re.match(r"^([0-9.]+)\s*([kmr]?)$", s)
+    if not m:
+        return None
+    number = float(m.group(1))
+    unit = m.group(2)
+    multipliers = {"k": 1e3, "m": 1e6, "r": 1.0, "": 1.0}
+    return number * multipliers.get(unit, 1.0)
+
+
+def normalize_inductance(value_str: str) -> float | None:
+    """Convert inductance string (e.g. '100nH', '10uH', '1mH') to henries."""
+    s = value_str.strip().lower().replace(" ", "")
+    m = re.match(r"^([0-9.]+)\s*([pnum]?)h$", s)
+    if not m:
+        return None
+    number = float(m.group(1))
+    unit = m.group(2)
+    multipliers = {"p": 1e-12, "n": 1e-9, "u": 1e-6, "m": 1e-3, "": 1.0}
+    return number * multipliers.get(unit, 1.0)
+
+
 def capacitance_match(val_str: str, expected_str: str) -> bool:
     a = normalize_capacitance(val_str)
     b = normalize_capacitance(expected_str)
@@ -34,10 +64,45 @@ def capacitance_match(val_str: str, expected_str: str) -> bool:
     return abs(a - b) / b < 0.01
 
 
+def _value_in_range(val_str: str, min_str: str | None, max_str: str | None, normalizer) -> tuple[bool, str]:
+    """Check if a value falls within [min_str, max_str]. Returns (ok, reason)."""
+    val = normalizer(val_str)
+    if val is None:
+        return False, f"Cannot parse value '{val_str}'"
+    if min_str is not None:
+        min_val = normalizer(min_str)
+        if min_val is not None and val < min_val * 0.999:
+            return False, f"{val_str} is below minimum {min_str}"
+    if max_str is not None:
+        max_val = normalizer(max_str)
+        if max_val is not None and val > max_val * 1.001:
+            return False, f"{val_str} exceeds maximum {max_str}"
+    return True, ""
+
+
+# ── Component type detection ───────────────────────────────────────────────────
+
 def is_capacitor(ref: str, partmap: dict) -> bool:
     footprint = partmap.get(ref, "").lower()
     return footprint.startswith("cc")
 
+
+def is_capacitor_general(ref: str, partmap: dict) -> bool:
+    """Footprint-first, ref-prefix fallback."""
+    if is_capacitor(ref, partmap):
+        return True
+    return bool(re.match(r"^C\d", ref, re.IGNORECASE))
+
+
+def is_resistor(ref: str) -> bool:
+    return bool(re.match(r"^R\d", ref, re.IGNORECASE))
+
+
+def is_inductor(ref: str) -> bool:
+    return bool(re.match(r"^(L\d|FB)", ref, re.IGNORECASE))
+
+
+# ── Rule dispatch ──────────────────────────────────────────────────────────────
 
 def check_rule(
     ref_des: str,
@@ -62,8 +127,27 @@ def check_rule(
     if isinstance(rule, PinToPinCapRule):
         return _check_pin_to_pin_cap(ref_des, rule, partmap, netmap, pinmap, valuemap)
 
+    if isinstance(rule, PinFloatingRule):
+        return _check_pin_floating(ref_des, rule, netmap, pinmap)
+
+    if isinstance(rule, PinToNetResistorRule):
+        return _check_pin_to_net_passive(ref_des, rule, partmap, netmap, pinmap, valuemap,
+                                         "pin_to_net_resistor", is_resistor, normalize_resistance)
+
+    if isinstance(rule, PinToNetCapacitorRule):
+        return _check_pin_to_net_passive(ref_des, rule, partmap, netmap, pinmap, valuemap,
+                                         "pin_to_net_capacitor",
+                                         lambda r: is_capacitor_general(r, partmap),
+                                         normalize_capacitance)
+
+    if isinstance(rule, PinToNetInductorRule):
+        return _check_pin_to_net_passive(ref_des, rule, partmap, netmap, pinmap, valuemap,
+                                         "pin_to_net_inductor", is_inductor, normalize_inductance)
+
     return {"rule_type": "unknown", "description": "", "status": "ERROR", "detail": "Unknown rule type"}
 
+
+# ── Individual checkers ────────────────────────────────────────────────────────
 
 def _check_pin_count(ref_des: str, rule: PinCountRule, pinmap: dict) -> dict:
     desc = rule.description or f"Total pin count must be one of {rule.count}"
@@ -128,7 +212,6 @@ def _check_pin_to_gnd_cap(
         if not is_capacitor(cap_ref, partmap):
             continue
 
-        # Find the other pin of the capacitor
         cap_ic_pins = pinmap.get(cap_ref, {})
         other_pins = [p for p in cap_ic_pins if p != cap_pin]
         for other_pin in other_pins:
@@ -194,6 +277,123 @@ def _check_pin_to_pin_cap(
             "status": rule.severity.upper(),
             "detail": f"No {rule.capacitance} cap found between pin{rule.pin1} ({net1}) and pin{rule.pin2} ({net2})"}
 
+
+def _check_pin_floating(
+    ref_des: str,
+    rule: PinFloatingRule,
+    netmap: dict,
+    pinmap: dict,
+) -> dict:
+    desc = rule.description or f"pin{rule.pin} must be floating (no external connection)"
+    ic_pins = pinmap.get(ref_des, {})
+    pin_net = ic_pins.get(rule.pin)
+
+    if pin_net is None:
+        # Pin is not in any signal net — truly floating
+        return {"rule_type": "pin_floating", "description": desc,
+                "status": "PASS", "detail": f"pin{rule.pin} is not connected to any net"}
+
+    # Pin is on a net — check if any other component is also on that net
+    net_entries = netmap.get(pin_net, [])
+    other_refs = [e["ref"] for e in net_entries if e["ref"] != ref_des]
+
+    if not other_refs:
+        return {"rule_type": "pin_floating", "description": desc,
+                "status": "PASS",
+                "detail": f"pin{rule.pin} is on net {pin_net} with no other connections (stub)"}
+
+    return {"rule_type": "pin_floating", "description": desc,
+            "status": rule.severity.upper(),
+            "detail": f"pin{rule.pin} is connected to net {pin_net} with: {', '.join(sorted(set(other_refs))[:5])}"}
+
+
+def _check_pin_to_net_passive(
+    ref_des: str,
+    rule,
+    partmap: dict,
+    netmap: dict,
+    pinmap: dict,
+    valuemap: dict,
+    rule_type: str,
+    is_comp_fn,
+    normalizer,
+) -> dict:
+    """
+    Generic checker for pin_to_net_resistor / pin_to_net_capacitor / pin_to_net_inductor.
+    Finds a passive component on the pin's net whose other terminal connects to rule.net,
+    and whose value falls within [rule.min_value, rule.max_value].
+    """
+    _range_str = ""
+    if rule.min_value and rule.max_value:
+        _range_str = f"{rule.min_value}–{rule.max_value}"
+    elif rule.min_value:
+        _range_str = f"≥{rule.min_value}"
+    elif rule.max_value:
+        _range_str = f"≤{rule.max_value}"
+    else:
+        _range_str = "any value"
+
+    comp_kind = {"pin_to_net_resistor": "resistor",
+                 "pin_to_net_capacitor": "capacitor",
+                 "pin_to_net_inductor": "inductor"}.get(rule_type, "passive")
+
+    desc = rule.description or f"pin{rule.pin} needs {_range_str} {comp_kind} to {rule.net}"
+
+    ic_pins = pinmap.get(ref_des, {})
+    target_net = ic_pins.get(rule.pin)
+
+    if target_net is None:
+        return {"rule_type": rule_type, "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"pin{rule.pin} not found in netlist"}
+
+    wrong_value_found = []
+    wrong_net_found = []
+
+    for entry in netmap.get(target_net, []):
+        comp_ref = entry["ref"]
+        comp_pin = entry["pin"]
+        if comp_ref == ref_des:
+            continue
+        if not is_comp_fn(comp_ref):
+            continue
+
+        comp_pins = pinmap.get(comp_ref, {})
+        other_pins = [p for p in comp_pins if p != comp_pin]
+
+        for other_pin in other_pins:
+            other_net = comp_pins[other_pin]
+            comp_value = valuemap.get(comp_ref, "")
+
+            if other_net == rule.net:
+                # Net matches — check value range
+                if rule.min_value is None and rule.max_value is None:
+                    return {"rule_type": rule_type, "description": desc,
+                            "status": "PASS",
+                            "detail": f"{comp_ref} ({comp_value or 'N/A'}) on {target_net}, other pin on {other_net}"}
+                ok, reason = _value_in_range(comp_value, rule.min_value, rule.max_value, normalizer)
+                if ok:
+                    return {"rule_type": rule_type, "description": desc,
+                            "status": "PASS",
+                            "detail": f"{comp_ref} ({comp_value}) on {target_net}, other pin on {other_net}"}
+                wrong_value_found.append(f"{comp_ref}={comp_value} ({reason})")
+            else:
+                wrong_net_found.append(f"{comp_ref} (other end on {other_net})")
+
+    if wrong_value_found:
+        return {"rule_type": rule_type, "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"{comp_kind.capitalize()} to {rule.net} found but value out of range: {', '.join(wrong_value_found)}"}
+    if wrong_net_found:
+        return {"rule_type": rule_type, "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"{comp_kind.capitalize()} found but other end not on '{rule.net}': {', '.join(wrong_net_found[:3])}"}
+    return {"rule_type": rule_type, "description": desc,
+            "status": rule.severity.upper(),
+            "detail": f"No {comp_kind} ({_range_str}) to net '{rule.net}' found on pin{rule.pin} (net: {target_net})"}
+
+
+# ── Top-level entry point ──────────────────────────────────────────────────────
 
 def check_ic(
     ref_des: str,

@@ -32,6 +32,11 @@ python 請用uv 管理環境，且使用3.12
     * pin38 需跟pin44 相連. 若不符合則error.
     * pin38 需接2.2uF to GND.若不符合則error.
 
+* 其他規則種類
+    * pin 需要空接(floating)
+    * pin 需接到特定阻抗範圍之間的電阻到，且電阻器的另一端為特定netname(Vcc or gnd or others)
+    * pin 需接到特定電容值範圍之間的電容，且電容器的另一端為特定netname(Vcc or gnd or others)
+    * pin 需接到特定電感感量範園之間的電感器，且電感器的另一端為特定netname(Vcc or gnd or others)
 
 # 執行需求
 在UI環境下，設定那些loacation IC(U15/U16) 要使用那一個ruler.yaml來檢查。執行後，在UI上顯示每一條規則檢查結果

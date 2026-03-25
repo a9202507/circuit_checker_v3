@@ -4,7 +4,14 @@
       "Bash(npm run:*)",
       "Read(//Users/home/.claude/projects/-Users-home-circuit-checker-v3/memory/**)",
       "Bash(lsof -ti:8000,5173,5174,5175)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Edit(~/.claude/skills/frontend-design/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/home/.claude/skills"
     ]
   }
 }
