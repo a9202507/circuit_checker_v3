@@ -87,7 +87,15 @@ function triggerInput(id) {
     <div class="upload-grid">
       <!-- ASC -->
       <div class="zone" :class="{ 'zone-ok': ascStatus === 'ok', 'zone-err': ascStatus === 'error' }">
-        <div class="zone-icon">📄</div>
+        <div class="zone-icon">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 20 12 L 44 12 Q 48 12 48 16 L 48 52 Q 48 56 44 56 L 20 56 Q 16 56 16 52 L 16 16 Q 16 12 20 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M 22 24 L 46 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M 22 32 L 46 32" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M 22 40 L 46 40" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M 22 48 L 46 48" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
         <div class="zone-title">{{ t.upload.asc.title }}</div>
         <div class="zone-sub">{{ t.upload.asc.sub }}</div>
         <input id="asc-input" type="file" accept=".asc,*/*" hidden @change="handleAsc" />
@@ -103,7 +111,21 @@ function triggerInput(id) {
 
       <!-- BOM -->
       <div class="zone" :class="{ 'zone-ok': bomStatus === 'ok', 'zone-err': bomStatus === 'error' }">
-        <div class="zone-icon">📋</div>
+        <div class="zone-icon">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="14" y="14" width="10" height="10" rx="1"/>
+              <rect x="28" y="14" width="10" height="10" rx="1"/>
+              <rect x="42" y="14" width="10" height="10" rx="1"/>
+              <rect x="14" y="28" width="10" height="10" rx="1"/>
+              <rect x="28" y="28" width="10" height="10" rx="1"/>
+              <rect x="42" y="28" width="10" height="10" rx="1"/>
+              <rect x="14" y="42" width="10" height="10" rx="1"/>
+              <rect x="28" y="42" width="10" height="10" rx="1"/>
+              <rect x="42" y="42" width="10" height="10" rx="1"/>
+            </g>
+          </svg>
+        </div>
         <div class="zone-title">{{ t.upload.bom.title }}</div>
         <div class="zone-sub">{{ t.upload.bom.sub }}</div>
         <input id="bom-input" type="file" accept=".BOM,.bom,.txt,*/*" hidden @change="handleBom" />
@@ -117,7 +139,19 @@ function triggerInput(id) {
 
       <!-- YAML -->
       <div class="zone" :class="{ 'zone-ok': yamlStatus === 'ok', 'zone-err': yamlStatus === 'error' }">
-        <div class="zone-icon">⚙️</div>
+        <div class="zone-icon">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M 16 16 L 48 16 Q 50 16 50 18 L 50 50 Q 50 52 48 52 L 16 52 Q 14 52 14 50 L 14 18 Q 14 16 16 16"/>
+              <circle cx="22" cy="28" r="3" fill="currentColor"/>
+              <line x1="28" y1="26" x2="42" y2="26"/>
+              <line x1="28" y1="30" x2="42" y2="30"/>
+              <circle cx="22" cy="40" r="3" fill="currentColor"/>
+              <line x1="28" y1="38" x2="42" y2="38"/>
+              <line x1="28" y1="42" x2="42" y2="42"/>
+            </g>
+          </svg>
+        </div>
         <div class="zone-title">{{ t.upload.yaml.title }}</div>
         <div class="zone-sub">{{ t.upload.yaml.sub }}</div>
         <input id="yaml-input" type="file" accept=".yaml,.yml" multiple hidden @change="handleYaml" />
@@ -141,7 +175,10 @@ function triggerInput(id) {
 </template>
 
 <style scoped>
-.upload-page { max-width: 900px; }
+.upload-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
 
 .page-header { margin-bottom: 24px; }
 h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
@@ -165,7 +202,19 @@ h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; 
 .zone-ok  { border-color: var(--primary); background: var(--primary-light); }
 .zone-err { border-color: #E84040; background: #FFF5F5; }
 
-.zone-icon  { font-size: 30px; margin-bottom: 10px; }
+.zone-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.zone-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+}
 .zone-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
 .zone-sub   { font-size: 12px; color: var(--text-sub); margin-bottom: 16px; line-height: 1.5; }
 .zone-btn   { margin: 0 auto; }

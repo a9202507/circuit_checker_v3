@@ -25,9 +25,12 @@ function selectTab(idx) {
     <!-- Top bar -->
     <header class="topbar">
       <div class="topbar-left">
-        <span class="logo-text">
-          <span class="logo-circuit">Circuit</span><span class="logo-checker">Checker</span>
-        </span>
+        <div class="logo-container">
+          <span class="logo-text">
+            <span class="logo-circuit">Circuit</span><span class="logo-checker">Checker</span>
+          </span>
+          <span class="logo-version">rev0.1</span>
+        </div>
       </div>
 
       <nav class="nav-tabs">
@@ -76,6 +79,14 @@ function selectTab(idx) {
   align-items: center;
   min-width: 180px;
 }
+
+.logo-container {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+}
+
 .logo-text {
   font-size: 17px;
   font-weight: 700;
@@ -85,6 +96,14 @@ function selectTab(idx) {
 }
 .logo-circuit { color: var(--primary); }
 .logo-checker { color: var(--text); }
+
+.logo-version {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.2px;
+  line-height: 1;
+}
 
 /* ── Nav tabs ─────────────────────────────────────────────────────────── */
 .nav-tabs {
