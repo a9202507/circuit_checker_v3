@@ -198,9 +198,9 @@ def _generate_html_report(req: ExportRequest, asc_filename: str, bom_filename: s
     err_c   = sum(1 for r in all_rules if r["status"] == "ERROR")
 
     def badge(status: str) -> str:
-        colors = {"PASS": ("#155724", "#d4edda"), "WARNING": ("#856404", "#fff3cd"), "ERROR": ("#721c24", "#f8d7da")}
+        colors = {"PASS": ("#007A52", "#E6F7F2"), "WARNING": ("#B07700", "#FFF8E6"), "ERROR": ("#C0392B", "#FFF0EE")}
         fg, bg = colors.get(status, ("#333", "#eee"))
-        return f'<span style="background:{bg};color:{fg};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">{status}</span>'
+        return f'<span style="background:{bg};color:{fg};padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">{status}</span>'
 
     ic_rows = ""
     for ic in results:
@@ -208,7 +208,7 @@ def _generate_html_report(req: ExportRequest, asc_filename: str, bom_filename: s
                   "WARNING" if any(r["status"] == "WARNING" for r in ic["results"]) else "PASS"
         rule_rows = ""
         for idx, r in enumerate(ic["results"], 1):
-            row_bg = {"PASS": "#f9fff9", "WARNING": "#fffef0", "ERROR": "#fff8f8"}.get(r["status"], "#fff")
+            row_bg = {"PASS": "#F9FFFC", "WARNING": "#FFFEF5", "ERROR": "#FFF9F9"}.get(r["status"], "#fff")
             rule_rows += f"""
             <tr style="background:{row_bg}">
               <td style="color:#bbb;text-align:center;padding:6px 10px">{idx}</td>
@@ -217,20 +217,20 @@ def _generate_html_report(req: ExportRequest, asc_filename: str, bom_filename: s
               <td style="padding:6px 10px;color:#555;font-size:12px">{r.get("detail","")}</td>
             </tr>"""
         ic_rows += f"""
-        <div style="border:1px solid #e0e0e0;border-radius:8px;margin-bottom:14px;overflow:hidden">
-          <div style="padding:10px 16px;background:#f8f9fa;display:flex;align-items:center;gap:12px">
+        <div style="border:1px solid #E4E8EE;border-radius:8px;margin-bottom:14px;overflow:hidden">
+          <div style="padding:10px 16px;background:#F5F7FA;display:flex;align-items:center;gap:12px;border-left:4px solid {'#E84040' if overall=='ERROR' else '#F0A500' if overall=='WARNING' else '#009B77'}">
             {badge(overall)}
             <strong style="font-size:14px">{ic["ref_des"]}</strong>
-            <span style="color:#666;font-size:13px">({ic.get("component_type","")})</span>
-            <span style="color:#999;font-size:12px">{ic.get("yaml_file","")}</span>
+            <span style="color:#777;font-size:13px">({ic.get("component_type","")})</span>
+            <span style="color:#AAA;font-size:12px">{ic.get("yaml_file","")}</span>
           </div>
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead>
-              <tr style="background:#f5f5f5">
-                <th style="padding:6px 10px;text-align:left;width:36px">#</th>
-                <th style="padding:6px 10px;text-align:left">描述</th>
-                <th style="padding:6px 10px;text-align:center;width:90px">狀態</th>
-                <th style="padding:6px 10px;text-align:left">詳細</th>
+              <tr style="background:#F5F7FA">
+                <th style="padding:7px 12px;text-align:left;width:36px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">#</th>
+                <th style="padding:7px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">Description</th>
+                <th style="padding:7px 12px;text-align:center;width:90px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">Status</th>
+                <th style="padding:7px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">Detail</th>
               </tr>
             </thead>
             <tbody>{rule_rows}</tbody>
@@ -240,43 +240,48 @@ def _generate_html_report(req: ExportRequest, asc_filename: str, bom_filename: s
     yaml_list = "".join(f"<li>{f}</li>" for f in req.yaml_files_used)
 
     return f"""<!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>線路檢查報告 — {asc_filename}</title>
+<title>CircuitChecker — {asc_filename}</title>
 <style>
-  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 32px; background:#f4f6fb; color:#222; }}
-  .card {{ background:#fff; border-radius:10px; padding:24px 28px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,.08); }}
-  h1 {{ font-size:22px; color:#1a73e8; margin:0 0 4px; }}
-  .meta {{ font-size:13px; color:#666; }}
+  body {{ font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 32px; background:#F5F7FA; color:#1A1A2E; }}
+  .card {{ background:#fff; border:1px solid #E4E8EE; border-radius:8px; padding:24px 28px; margin-bottom:20px; }}
+  .card-title {{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#777; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #E4E8EE; }}
+  h1 {{ font-size:22px; font-weight:700; letter-spacing:-0.3px; margin:0 0 4px; }}
+  .meta {{ font-size:13px; color:#777; }}
   .summary-grid {{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }}
-  .stat {{ text-align:center; padding:16px; border-radius:8px; background:#f8f9fa; }}
+  .stat {{ text-align:center; padding:16px; border-radius:6px; background:#F5F7FA; }}
   .stat-num {{ font-size:28px; font-weight:700; }}
-  .stat-label {{ font-size:12px; color:#666; margin-top:4px; }}
-  ul {{ margin:6px 0; padding-left:20px; font-size:13px; color:#444; }}
+  .stat-label {{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:#777; margin-top:4px; }}
+  ul {{ margin:6px 0; padding-left:20px; font-size:13px; color:#555; }}
+  .footer {{ margin-top:32px; font-size:11px; color:#AAA; text-align:center; border-top:1px solid #E4E8EE; padding-top:16px; }}
 </style>
 </head>
 <body>
   <div class="card">
-    <h1>線路檢查報告</h1>
-    <div class="meta">匯出時間：{export_dt} &nbsp;|&nbsp; 來源 Netlist：{asc_filename} &nbsp;|&nbsp; BOM：{bom_filename}</div>
-    <div class="meta" style="margin-top:6px">規則 YAML：<ul>{yaml_list}</ul></div>
+    <h1><span style="color:#009B77">Circuit</span><span style="color:#1A1A2E">Checker</span> &nbsp;<span style="font-size:15px;font-weight:400;color:#777">— Circuit Check Report</span></h1>
+    <div class="meta" style="margin-top:6px">Exported: {export_dt} &nbsp;|&nbsp; Netlist: {asc_filename} &nbsp;|&nbsp; BOM: {bom_filename}</div>
+    <div class="meta" style="margin-top:6px">Rule YAML files:<ul>{yaml_list}</ul></div>
   </div>
 
   <div class="card">
+    <div class="card-title">Summary</div>
     <div class="summary-grid">
-      <div class="stat"><div class="stat-num">{total_ics}</div><div class="stat-label">檢查 IC 數</div></div>
-      <div class="stat"><div class="stat-num" style="color:#155724">{pass_c}</div><div class="stat-label">PASS</div></div>
-      <div class="stat"><div class="stat-num" style="color:#856404">{warn_c}</div><div class="stat-label">WARNING</div></div>
-      <div class="stat"><div class="stat-num" style="color:#721c24">{err_c}</div><div class="stat-label">ERROR</div></div>
+      <div class="stat"><div class="stat-num">{total_ics}</div><div class="stat-label">ICs Checked</div></div>
+      <div class="stat"><div class="stat-num" style="color:#007A52">{pass_c}</div><div class="stat-label">Pass</div></div>
+      <div class="stat"><div class="stat-num" style="color:#B07700">{warn_c}</div><div class="stat-label">Warning</div></div>
+      <div class="stat"><div class="stat-num" style="color:#C0392B">{err_c}</div><div class="stat-label">Error</div></div>
     </div>
   </div>
 
   <div class="card">
-    <h2 style="font-size:16px;color:#1a73e8;margin:0 0 16px">詳細結果</h2>
+    <div class="card-title">Detailed Results</div>
     {ic_rows}
   </div>
+
+  <div class="footer">Generated by Circuit Checker · {export_dt}</div>
 </body>
 </html>"""
 

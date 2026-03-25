@@ -6,6 +6,10 @@
 ## .asc 是由Allegro OrCAD中，轉出netlist 頁面下，選擇pads2000的輸出格式
 ## .BOM 是由Allegro OrCAD中，產生出的 Bill of Material 表格
 
+# 網頁需支持中英文介面切換，並且預設英文介面
+
+# 在輸出結果頁面，需要有匯出完整報告的功能，完整報告包含：使用到的.asc , .bom, .yaml files 以及輸出report.html ，報告.html 檔名以namelist的名稱加上匯出日期，完整報告打包成.zip , 輸出報告.html請使用英文介面
+
 # 技術細節
 使用vite8 做網頁介面，並由python 做規則檢查
 python 請用uv 管理環境，且使用3.12 

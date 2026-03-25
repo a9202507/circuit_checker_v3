@@ -1,22 +1,26 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useAppStore } from '../stores/appStore'
+import { useT } from '../i18n'
 import { runCheck } from '../api'
 
 const emit = defineEmits(['go-results'])
 const store = useAppStore()
+const t = useT()
 
-const search = ref('')
+const search   = ref('')
 const bulkYaml = ref('')
 
 const filtered = computed(() => {
   const q = search.value.trim().toUpperCase()
-  return store.mappings.filter(m => !q || m.refDes.toUpperCase().includes(q) || m.componentType.toUpperCase().includes(q))
+  return store.mappings.filter(m =>
+    !q ||
+    m.refDes.toUpperCase().includes(q) ||
+    m.componentType.toUpperCase().includes(q)
+  )
 })
 
-const selectedMappings = computed(() =>
-  store.mappings.filter(m => m.selected)
-)
+const selectedMappings = computed(() => store.mappings.filter(m => m.selected))
 
 const readyToRun = computed(() =>
   selectedMappings.value.length > 0 &&
@@ -25,6 +29,10 @@ const readyToRun = computed(() =>
 
 const allFilteredSelected = computed(() =>
   filtered.value.length > 0 && filtered.value.every(m => m.selected)
+)
+
+const someFilteredSelected = computed(() =>
+  !allFilteredSelected.value && filtered.value.some(m => m.selected)
 )
 
 function toggleAll(checked) {
@@ -50,51 +58,63 @@ async function runChecks() {
     emit('go-results')
   } catch (err) {
     store.isChecking = false
-    alert('執行檢查時發生錯誤：' + (err.response?.data?.detail || err.message))
+    alert('Error: ' + (err.response?.data?.detail || err.message))
   }
 }
 </script>
 
 <template>
   <div class="mapping-page">
-    <h2>IC 對應設定</h2>
-    <p class="hint">勾選要檢查的 IC，並為每個 IC 指定規則 YAML 檔案，然後執行檢查。</p>
+    <div class="page-header">
+      <h2>{{ t.mapping.title }}</h2>
+      <p class="hint">{{ t.mapping.hint }}</p>
+    </div>
 
     <div class="toolbar">
-      <input v-model="search" class="search" placeholder="搜尋 RefDes / 元件型號…" />
-      <select v-model="bulkYaml" class="bulk-select">
-        <option value="">批次指定規則…</option>
+      <input v-model="search" class="search-input" :placeholder="t.mapping.search" />
+      <select v-model="bulkYaml" class="a-select">
+        <option value="">{{ t.mapping.bulkSelect }}</option>
         <option v-for="f in store.yamlFiles" :key="f" :value="f">{{ f }}</option>
       </select>
-      <button class="apply-btn" :disabled="!bulkYaml" @click="applyBulk">套用至已選</button>
+      <button class="btn btn-outline" :disabled="!bulkYaml" @click="applyBulk">
+        {{ t.mapping.applyBtn }}
+      </button>
     </div>
 
     <div class="table-wrap">
-      <table>
+      <table class="a-table">
         <thead>
           <tr>
-            <th style="width:36px;text-align:center">
+            <th class="th-check">
               <input
                 type="checkbox"
                 :checked="allFilteredSelected"
-                :indeterminate="!allFilteredSelected && filtered.some(m => m.selected)"
+                :indeterminate="someFilteredSelected"
                 @change="e => toggleAll(e.target.checked)"
-                title="全選 / 全消"
               />
             </th>
-            <th>Ref Des</th>
-            <th>元件型號</th>
-            <th>規則 YAML</th>
+            <th>{{ t.mapping.th.refdes }}</th>
+            <th>{{ t.mapping.th.component }}</th>
+            <th>{{ t.mapping.th.yaml }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="m in filtered" :key="m.refDes" :class="{ selected: m.selected }">
-            <td style="text-align:center"><input type="checkbox" v-model="m.selected" /></td>
-            <td class="refdes">{{ m.refDes }}</td>
-            <td class="comptype">{{ m.componentType }}</td>
+          <tr
+            v-for="m in filtered"
+            :key="m.refDes"
+            :class="{ selected: m.selected }"
+            @click.self="m.selected = !m.selected"
+          >
+            <td class="td-check"><input type="checkbox" v-model="m.selected" /></td>
+            <td class="td-refdes">{{ m.refDes }}</td>
+            <td class="td-comp">{{ m.componentType }}</td>
             <td>
-              <select v-model="m.yamlFile" class="yaml-select" :class="{ matched: m.yamlFile }">
-                <option value="">-- 選擇 --</option>
+              <select
+                v-model="m.yamlFile"
+                class="a-select yaml-sel"
+                :class="{ matched: m.yamlFile }"
+              >
+                <option value="">{{ t.mapping.unassigned }}</option>
                 <option v-for="f in store.yamlFiles" :key="f" :value="f">{{ f }}</option>
               </select>
             </td>
@@ -105,15 +125,18 @@ async function runChecks() {
 
     <div class="footer">
       <span class="summary">
-        已選 {{ selectedMappings.length }} 個 IC，
-        {{ selectedMappings.filter(m => m.yamlFile).length }} 個已指定規則
+        {{
+          t.mapping.summary
+            .replace('{sel}', selectedMappings.length)
+            .replace('{assigned}', selectedMappings.filter(m => m.yamlFile).length)
+        }}
       </span>
       <button
-        class="run-btn"
+        class="btn btn-primary"
         :disabled="!readyToRun || store.isChecking"
         @click="runChecks"
       >
-        {{ store.isChecking ? '檢查中…' : '▶ 執行線路檢查' }}
+        {{ store.isChecking ? t.mapping.running : t.mapping.runBtn }}
       </button>
     </div>
   </div>
@@ -121,95 +144,88 @@ async function runChecks() {
 
 <style scoped>
 .mapping-page { max-width: 900px; }
-h2 { font-size: 18px; margin-bottom: 6px; color: #1a73e8; }
-.hint { color: #666; font-size: 14px; margin-bottom: 16px; }
 
+.page-header { margin-bottom: 20px; }
+h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.hint { font-size: 13px; color: var(--text-sub); }
+
+/* Toolbar */
 .toolbar {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   flex-wrap: wrap;
 }
-.search {
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 6px 10px;
+.search-input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 12px;
   font-size: 13px;
-  width: 200px;
+  width: 220px;
+  outline: none;
+  transition: border-color 0.15s;
 }
-.bulk-select {
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 6px 8px;
+.search-input:focus { border-color: var(--primary); }
+.a-select {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 10px;
   font-size: 13px;
+  background: #fff;
+  outline: none;
 }
-.apply-btn {
-  background: #1a73e8;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 13px;
-}
-.apply-btn:disabled { background: #aaa; cursor: not-allowed; }
+.a-select:focus { border-color: var(--primary); }
 
+/* Table */
 .table-wrap {
-  max-height: 420px;
+  max-height: 440px;
   overflow-y: auto;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-thead th {
-  background: #f5f5f5;
-  padding: 8px 12px;
+.a-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+.a-table thead th {
+  background: var(--tbl-head-bg);
+  padding: 9px 14px;
   text-align: left;
   font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-sub);
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  border-bottom: 1px solid #ddd;
+  z-index: 1;
 }
-tbody tr:hover { background: #f9fbff; }
-tbody tr.selected { background: #e8f0fe; }
-tbody td {
-  padding: 6px 12px;
-  border-bottom: 1px solid #f0f0f0;
-}
-.refdes { font-family: monospace; font-weight: 600; }
-.comptype { font-size: 12px; color: #555; }
-.yaml-select {
-  width: 100%;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 4px 6px;
-  font-size: 13px;
-}
-.yaml-select.matched {
-  border-color: #34a853;
-  background: #f0fdf4;
-}
+.th-check { width: 40px; text-align: center !important; }
 
+.a-table tbody tr { transition: background 0.1s; }
+.a-table tbody tr:hover { background: #F8FBFF; }
+.a-table tbody tr.selected { background: var(--primary-light); }
+.a-table tbody td {
+  padding: 9px 14px;
+  border-bottom: 1px solid #F5F7FA;
+  color: var(--text);
+}
+.a-table tbody tr:last-child td { border-bottom: none; }
+.td-check { width: 40px; text-align: center; }
+.td-refdes { font-family: ui-monospace, monospace; font-weight: 600; font-size: 13px; }
+.td-comp   { font-size: 12px; color: var(--text-sub); }
+
+.yaml-sel { width: 100%; font-size: 12px; }
+.yaml-sel.matched { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+/* Footer */
 .footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 16px;
 }
-.summary { font-size: 13px; color: #666; }
-.run-btn {
-  background: #1a73e8;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 28px;
-  font-size: 14px;
-  font-weight: 600;
-}
-.run-btn:disabled { background: #aaa; cursor: not-allowed; }
-.run-btn:not(:disabled):hover { background: #1558b0; }
+.summary { font-size: 13px; color: var(--text-sub); }
+
+input[type="checkbox"] { accent-color: var(--primary); cursor: pointer; }
 </style>

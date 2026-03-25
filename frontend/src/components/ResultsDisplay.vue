@@ -1,22 +1,22 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useAppStore } from '../stores/appStore'
-import { runCheck, exportReport } from '../api'
+import { useT } from '../i18n'
+import { exportReport } from '../api'
 
 const store = useAppStore()
-
+const t = useT()
 const collapsed = ref({})
 
 function toggleCollapse(refDes) {
   collapsed.value[refDes] = !collapsed.value[refDes]
 }
-
 function isCollapsed(refDes) {
   return collapsed.value[refDes] ?? false
 }
 
 function overallStatus(results) {
-  if (results.some(r => r.status === 'ERROR')) return 'ERROR'
+  if (results.some(r => r.status === 'ERROR'))   return 'ERROR'
   if (results.some(r => r.status === 'WARNING')) return 'WARNING'
   return 'PASS'
 }
@@ -29,29 +29,11 @@ function statusCount(results) {
   if (p) parts.push(`${p} PASS`)
   if (w) parts.push(`${w} WARNING`)
   if (e) parts.push(`${e} ERROR`)
-  return parts.join('，')
-}
-
-async function exportZip() {
-  try {
-    const yamlFilesUsed = [...new Set(store.checkResults.map(ic => ic.yaml_file).filter(Boolean))]
-    const res = await exportReport(store.checkResults, yamlFilesUsed)
-    const url = URL.createObjectURL(res.data)
-    const a = document.createElement('a')
-    a.href = url
-    // filename comes from Content-Disposition, but set a fallback
-    const cd = res.headers['content-disposition'] || ''
-    const match = cd.match(/filename="?([^"]+)"?/)
-    a.download = match ? match[1] : 'circuit_report.zip'
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch (err) {
-    alert('匯出報告失敗：' + (err.response?.data?.detail || err.message))
-  }
+  return parts.join(' · ')
 }
 
 function exportCSV() {
-  const rows = [['RefDes', 'YAML', '類型', '描述', '狀態', '詳細']]
+  const rows = [['RefDes', 'YAML', 'Type', 'Description', 'Status', 'Detail']]
   for (const ic of store.checkResults) {
     for (const r of ic.results) {
       rows.push([ic.ref_des, ic.yaml_file, r.rule_type, r.description, r.status, r.detail])
@@ -66,47 +48,62 @@ function exportCSV() {
   a.click()
   URL.revokeObjectURL(url)
 }
+
+async function exportZip() {
+  try {
+    const yamlFilesUsed = [...new Set(store.checkResults.map(ic => ic.yaml_file).filter(Boolean))]
+    const res = await exportReport(store.checkResults, yamlFilesUsed)
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a')
+    a.href = url
+    const cd = res.headers['content-disposition'] || ''
+    const match = cd.match(/filename="?([^"]+)"?/)
+    a.download = match ? match[1] : 'circuit_report.zip'
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    alert(t.value.results.exportFail + (err.response?.data?.detail || err.message))
+  }
+}
 </script>
 
 <template>
   <div class="results-page">
     <div class="top-bar">
-      <h2>檢查結果</h2>
+      <h2>{{ t.results.title }}</h2>
       <div v-if="store.checkResults.length" class="export-group">
-        <button class="export-btn" @click="exportCSV">↓ 匯出 CSV</button>
-        <button class="export-btn zip-btn" @click="exportZip">↓ 匯出完整報告 (.zip)</button>
+        <button class="btn btn-ghost" @click="exportCSV">{{ t.results.exportCsv }}</button>
+        <button class="btn btn-outline" @click="exportZip">{{ t.results.exportZip }}</button>
       </div>
     </div>
 
     <div v-if="!store.checkResults.length" class="empty">
-      尚無檢查結果，請至「IC 對應設定」頁面執行檢查。
+      {{ t.results.empty }}
     </div>
 
     <div v-for="ic in store.checkResults" :key="ic.ref_des" class="ic-section">
       <div
         class="ic-header"
-        :class="'status-' + overallStatus(ic.results).toLowerCase()"
+        :class="'hdr-' + overallStatus(ic.results).toLowerCase()"
         @click="toggleCollapse(ic.ref_des)"
       >
-        <span class="ic-title">
-          <span class="status-badge" :class="'badge-' + overallStatus(ic.results).toLowerCase()">
-            {{ overallStatus(ic.results) }}
-          </span>
-          {{ ic.ref_des }}
-          <span class="ic-type">({{ ic.component_type }})</span>
-          <span class="ic-yaml">{{ ic.yaml_file }}</span>
+        <span class="badge" :class="'badge-' + overallStatus(ic.results).toLowerCase()">
+          {{ overallStatus(ic.results) }}
         </span>
+        <span class="ic-refdes">{{ ic.ref_des }}</span>
+        <span class="ic-type">({{ ic.component_type }})</span>
+        <span class="ic-yaml">{{ ic.yaml_file }}</span>
         <span class="ic-summary">{{ statusCount(ic.results) }}</span>
         <span class="toggle">{{ isCollapsed(ic.ref_des) ? '▶' : '▼' }}</span>
       </div>
 
-      <table v-if="!isCollapsed(ic.ref_des)">
+      <table v-if="!isCollapsed(ic.ref_des)" class="a-table">
         <thead>
           <tr>
-            <th style="width:40px">#</th>
-            <th>描述</th>
-            <th style="width:90px">狀態</th>
-            <th>詳細</th>
+            <th style="width:40px">{{ t.results.th.num }}</th>
+            <th>{{ t.results.th.desc }}</th>
+            <th style="width:96px">{{ t.results.th.status }}</th>
+            <th>{{ t.results.th.detail }}</th>
           </tr>
         </thead>
         <tbody>
@@ -115,14 +112,12 @@ function exportCSV() {
             :key="idx"
             :class="'row-' + r.status.toLowerCase()"
           >
-            <td class="idx">{{ idx + 1 }}</td>
+            <td class="td-num">{{ idx + 1 }}</td>
             <td>{{ r.description || r.rule_type }}</td>
             <td>
-              <span class="status-tag" :class="'tag-' + r.status.toLowerCase()">
-                {{ r.status }}
-              </span>
+              <span class="badge" :class="'badge-' + r.status.toLowerCase()">{{ r.status }}</span>
             </td>
-            <td class="detail">{{ r.detail }}</td>
+            <td class="td-detail">{{ r.detail }}</td>
           </tr>
         </tbody>
       </table>
@@ -137,34 +132,22 @@ function exportCSV() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
-h2 { font-size: 18px; color: #1a73e8; }
+h2 { font-size: 18px; font-weight: 700; color: var(--text); }
 
 .export-group { display: flex; gap: 8px; }
-.export-btn {
-  background: #fff;
-  border: 1px solid #1a73e8;
-  color: #1a73e8;
-  border-radius: 6px;
-  padding: 6px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.export-btn:hover { background: #e8f0fe; }
-.zip-btn { border-color: #34a853; color: #34a853; }
-.zip-btn:hover { background: #f0fdf4; }
 
 .empty {
-  color: #888;
+  color: var(--text-sub);
   font-size: 14px;
-  padding: 40px 0;
+  padding: 60px 0;
   text-align: center;
 }
 
+/* IC section */
 .ic-section {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 8px;
   margin-bottom: 12px;
   overflow: hidden;
@@ -173,63 +156,54 @@ h2 { font-size: 18px; color: #1a73e8; }
 .ic-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 16px;
   cursor: pointer;
-  background: #f8f9fa;
   user-select: none;
+  background: var(--tbl-head-bg);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
 }
-.ic-header:hover { background: #f0f4ff; }
+.ic-header:hover { background: #EDF2FB; }
+.hdr-error   { background: #FFF8F8; border-left: 4px solid #E84040; }
+.hdr-warning { background: #FFFDF5; border-left: 4px solid #F0A500; }
+.hdr-pass    { background: #F5FFF9; border-left: 4px solid var(--primary); }
 
-.ic-title { display: flex; align-items: center; gap: 8px; flex: 1; font-weight: 600; font-size: 14px; }
-.ic-type { font-weight: 400; color: #666; }
-.ic-yaml { font-size: 12px; color: #999; font-weight: 400; }
-.ic-summary { font-size: 12px; color: #555; }
-.toggle { color: #888; font-size: 11px; }
+.ic-refdes { font-family: ui-monospace, monospace; font-weight: 700; font-size: 14px; }
+.ic-type   { font-size: 13px; color: var(--text-sub); }
+.ic-yaml   { font-size: 11px; color: #AAA; }
+.ic-summary { font-size: 12px; color: var(--text-sub); margin-left: auto; }
+.toggle    { font-size: 11px; color: #AAA; }
 
-.status-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 10px;
-  text-transform: uppercase;
-}
-.badge-pass { background: #d4edda; color: #155724; }
-.badge-warning { background: #fff3cd; color: #856404; }
-.badge-error { background: #f8d7da; color: #721c24; }
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-thead th {
-  background: #f5f5f5;
-  padding: 7px 12px;
+/* Table */
+.a-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.a-table thead th {
+  background: var(--tbl-head-bg);
+  padding: 8px 14px;
   text-align: left;
   font-weight: 600;
-  border-bottom: 1px solid #ddd;
-  border-top: 1px solid #e0e0e0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-sub);
+  border-bottom: 1px solid var(--border);
 }
-tbody td {
-  padding: 7px 12px;
-  border-bottom: 1px solid #f0f0f0;
+.a-table tbody td {
+  padding: 9px 14px;
+  border-bottom: 1px solid #F5F7FA;
   vertical-align: top;
 }
-.idx { color: #bbb; text-align: center; }
-.detail { color: #555; font-size: 12px; }
+.a-table tbody tr:last-child td { border-bottom: none; }
+.td-num    { color: #C8CDD6; text-align: center; }
+.td-detail { color: var(--text-sub); font-size: 12px; }
 
-.row-pass td { background: #f9fff9; }
-.row-warning td { background: #fffef0; }
-.row-error td { background: #fff8f8; }
+.row-pass    td { background: #F9FFFC; }
+.row-warning td { background: #FFFEF5; }
+.row-error   td { background: #FFF9F9; }
 
-.status-tag {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 4px;
-}
-.tag-pass { background: #d4edda; color: #155724; }
-.tag-warning { background: #fff3cd; color: #856404; }
-.tag-error { background: #f8d7da; color: #721c24; }
+/* Reuse global badge but add pill shape for status tags inside table */
+.badge { border-radius: 3px; }
+.badge-pass  { background: #E6F7F2; color: #007A52; }
+.badge-warn, .badge-warning { background: #FFF8E6; color: #B07700; }
+.badge-error { background: #FFF0EE; color: #C0392B; }
 </style>

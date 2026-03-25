@@ -1,25 +1,19 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useAppStore } from './stores/appStore'
+import { useT, lang, toggleLang } from './i18n'
 import FileUpload from './components/FileUpload.vue'
 import YamlGenerator from './components/YamlGenerator.vue'
 import RuleMapping from './components/RuleMapping.vue'
 import ResultsDisplay from './components/ResultsDisplay.vue'
 
 const store = useAppStore()
+const t = useT()
 const activeTab = ref(0)
 
-const tabs = [
-  { label: '① 上傳檔案', key: 'upload' },
-  { label: '② YAML 規則產生器', key: 'yaml' },
-  { label: '③ IC 對應設定', key: 'mapping' },
-  { label: '④ 檢查結果', key: 'results' },
-]
+const TAB_KEYS = ['upload', 'yaml', 'mapping', 'results']
 
-const tabDisabled = (idx) => {
-  if (idx <= 1) return false
-  return !store.canCheck
-}
+const tabDisabled = (idx) => idx >= 2 ? !store.canCheck : false
 
 function selectTab(idx) {
   if (!tabDisabled(idx)) activeTab.value = idx
@@ -28,88 +22,124 @@ function selectTab(idx) {
 
 <template>
   <div id="app-root">
-    <header>
-      <h1>線路檢查器 Circuit Checker</h1>
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="logo-text">
+          <span class="logo-circuit">Circuit</span><span class="logo-checker">Checker</span>
+        </span>
+      </div>
+
+      <nav class="nav-tabs">
+        <button
+          v-for="(key, idx) in TAB_KEYS"
+          :key="key"
+          :class="['nav-tab', { active: activeTab === idx, disabled: tabDisabled(idx) }]"
+          @click="selectTab(idx)"
+        >
+          {{ t.tabs[key] }}
+        </button>
+      </nav>
+
+      <div class="topbar-right">
+        <button class="lang-btn" @click="toggleLang">{{ t.langBtn }}</button>
+      </div>
     </header>
 
-    <nav class="tabs">
-      <button
-        v-for="(tab, idx) in tabs"
-        :key="tab.key"
-        :class="['tab-btn', { active: activeTab === idx, disabled: tabDisabled(idx) }]"
-        @click="selectTab(idx)"
-      >
-        {{ tab.label }}
-      </button>
-    </nav>
-
+    <!-- Page content -->
     <main class="tab-content">
-      <FileUpload v-if="activeTab === 0" @go-next="activeTab = 1" />
+      <FileUpload    v-if="activeTab === 0" @go-next="activeTab = 1" />
       <YamlGenerator v-else-if="activeTab === 1" @go-next="activeTab = 2" />
-      <RuleMapping v-else-if="activeTab === 2" @go-results="activeTab = 3" />
+      <RuleMapping   v-else-if="activeTab === 2" @go-results="activeTab = 3" />
       <ResultsDisplay v-else-if="activeTab === 3" />
     </main>
   </div>
 </template>
 
 <style scoped>
-#app-root {
-  min-height: 100vh;
+#app-root {}
+
+/* ── Top bar ──────────────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-bottom: 3px solid var(--primary);
+  padding: 0 8px;
+  height: 56px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  gap: 24px;
 }
 
-header {
-  padding: 20px 0 12px;
-  border-bottom: 2px solid #1a73e8;
-  margin-bottom: 0;
+.topbar-left {
+  display: flex;
+  align-items: center;
+  min-width: 180px;
 }
-
-header h1 {
-  font-size: 22px;
+.logo-text {
+  font-size: 17px;
   font-weight: 700;
-  color: #1a73e8;
-  letter-spacing: 0.3px;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  line-height: 1;
 }
+.logo-circuit { color: var(--primary); }
+.logo-checker { color: var(--text); }
 
-.tabs {
+/* ── Nav tabs ─────────────────────────────────────────────────────────── */
+.nav-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid #ddd;
-  background: #fff;
-  padding: 0 4px;
+  flex: 1;
+  height: 56px;
 }
-
-.tab-btn {
-  padding: 12px 20px;
+.nav-tab {
+  height: 56px;
+  padding: 0 20px;
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #555;
+  color: var(--text-sub);
   border-bottom: 3px solid transparent;
-  margin-bottom: -1px;
+  margin-bottom: -3px;
+  cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
 }
-
-.tab-btn:hover:not(.disabled) {
-  color: #1a73e8;
+.nav-tab:hover:not(.disabled) { color: var(--primary); }
+.nav-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
 }
+.nav-tab.disabled { color: #bbb; cursor: not-allowed; }
 
-.tab-btn.active {
-  color: #1a73e8;
-  border-bottom-color: #1a73e8;
-}
-
-.tab-btn.disabled {
-  color: #bbb;
-  cursor: not-allowed;
-}
-
-.tab-content {
+/* ── Language button ──────────────────────────────────────────────────── */
+.topbar-right { min-width: 60px; display: flex; justify-content: flex-end; }
+.lang-btn {
   background: #fff;
-  border: 1px solid #e0e0e0;
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  letter-spacing: 0.3px;
+}
+.lang-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ── Content area ─────────────────────────────────────────────────────── */
+.tab-content {
+  background: var(--card);
+  border: 1px solid var(--border);
   border-top: none;
   border-radius: 0 0 8px 8px;
-  padding: 24px;
-  min-height: 500px;
+  padding: 28px 28px;
 }
 </style>
