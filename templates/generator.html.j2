@@ -1,0 +1,212 @@
+{% extends 'base.html.j2' %}
+
+{% block title %}規則產生器{% endblock %}
+
+{% block content %}
+<style>
+    .rule-form {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+        position: relative;
+    }
+    .rule-form fieldset {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        margin-top: 10px;
+    }
+    .rule-form legend {
+        font-weight: bold;
+        padding: 0 5px;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+    input[type="text"], select {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+    .attribute-pair {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .attribute-pair input {
+        width: calc(50% - 25px);
+    }
+    button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    button.remove-btn {
+        background-color: #dc3545;
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+    .add-attribute-btn {
+        background-color: #28a745;
+        padding: 5px 10px;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+    .remove-rule-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+</style>
+
+<h1>規則 YAML 產生器</h1>
+<p>使用下方的表單來動態建立您的檢查規則，完成後點擊「產生 YAML」。</p>
+
+<div id="rules-container">
+    <!-- Rule forms will be inserted here -->
+</div>
+
+<button id="add-rule-btn">新增規則</button>
+<hr style="margin: 20px 0;">
+<button id="generate-btn">產生 YAML</button>
+
+<!-- Template for a single rule -->
+<template id="rule-template">
+    <div class="rule-form">
+        <button class="remove-rule-btn remove-btn" onclick="this.parentElement.remove()">移除規則</button>
+        <div>
+            <label>規則 ID:</label>
+            <input type="text" class="rule-id" placeholder="e.g., rule-001">
+        </div>
+        <div>
+            <label>描述:</label>
+            <input type="text" class="rule-description" placeholder="e.g., Component must have a PartNumber">
+        </div>
+        <div>
+            <label>嚴重性:</label>
+            <select class="rule-severity">
+                <option value="ERROR">ERROR</option>
+                <option value="WARN">WARN</option>
+                <option value="INFO">INFO</option>
+            </select>
+        </div>
+        <fieldset>
+            <legend>匹配條件 (Match)</legend>
+            <div>
+                <label>標籤 (Tag):</label>
+                <input type="text" class="match-tag" placeholder="e.g., Part">
+            </div>
+            <div class="attributes-container">
+                <!-- Attribute pairs will be inserted here -->
+            </div>
+            <button class="add-attribute-btn" type="button">新增屬性</button>
+        </fieldset>
+    </div>
+</template>
+
+<!-- Template for a single attribute pair -->
+<template id="attribute-template">
+    <div class="attribute-pair">
+        <input type="text" class="attr-key" placeholder="屬性名稱">
+        <input type="text" class="attr-value" placeholder="屬性值 (留空代表檢查是否存在)">
+        <button class="remove-btn" onclick="this.parentElement.remove()" type="button">移除</button>
+    </div>
+</template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const rulesContainer = document.getElementById('rules-container');
+    const addRuleBtn = document.getElementById('add-rule-btn');
+    const generateBtn = document.getElementById('generate-btn');
+    const ruleTemplate = document.getElementById('rule-template');
+    const attributeTemplate = document.getElementById('attribute-template');
+
+    function addRule() {
+        const ruleClone = ruleTemplate.content.cloneNode(true);
+        rulesContainer.appendChild(ruleClone);
+        const newForm = rulesContainer.lastElementChild;
+        newForm.querySelector('.add-attribute-btn').addEventListener('click', addAttribute);
+    }
+
+    function addAttribute(event) {
+        const container = event.target.previousElementSibling;
+        const attributeClone = attributeTemplate.content.cloneNode(true);
+        container.appendChild(attributeClone);
+    }
+
+    function generateYaml() {
+        const rules = [];
+        document.querySelectorAll('.rule-form').forEach(form => {
+            const rule = {
+                id: form.querySelector('.rule-id').value,
+                description: form.querySelector('.rule-description').value,
+                severity: form.querySelector('.rule-severity').value,
+                match: {
+                    tag: form.querySelector('.match-tag').value,
+                    attr: {}
+                }
+            };
+
+            form.querySelectorAll('.attribute-pair').forEach(pair => {
+                const key = pair.querySelector('.attr-key').value;
+                const value = pair.querySelector('.attr-value').value;
+                if (key) {
+                    rule.match.attr[key] = value === '' ? null : value;
+                }
+            });
+            rules.push(rule);
+        });
+
+        const data = { rules: rules };
+        
+        // For now, just log the JSON to the console
+        console.log('Generated JSON:', JSON.stringify(data, null, 2));
+
+        // In the next step, we will send this to the backend
+        fetch('/generate-yaml', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.blob();
+            }
+            throw new Error('Network response was not ok.');
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'generated_rules.yaml';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            console.error('Error generating YAML:', error);
+            alert('產生 YAML 時發生錯誤，請檢查主控台以獲取詳細資訊。');
+        });
+    }
+
+    addRuleBtn.addEventListener('click', addRule);
+    generateBtn.addEventListener('click', generateYaml);
+
+    // Add one rule form by default
+    addRule();
+});
+</script>
+{% endblock %}

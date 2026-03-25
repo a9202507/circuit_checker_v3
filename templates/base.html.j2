@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}{% endblock %} - 線路檢查器</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f9; }
+    header { background-color: #333; color: white; padding: 1rem; }
+    header a { color: white; text-decoration: none; margin-right: 1rem; }
+    header a:hover { text-decoration: underline; }
+    main { margin: 20px; }
+    h1 { color: #333; }
+    .content { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px;}
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    thead { background-color: #f2f2f2; }
+    .error { color: #b00020; font-weight: bold; }
+    .warn { color: #f57c00; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/">首頁</a>
+    <a href="/generator">規則產生器</a>
+  </header>
+  <main>
+    <div class="content">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</body>
+</html>
