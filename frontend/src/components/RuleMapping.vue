@@ -61,6 +61,12 @@ async function runChecks() {
     alert('Error: ' + (err.response?.data?.detail || err.message))
   }
 }
+
+// Format spec badge: show key=value pairs
+function specBadges(m) {
+  const specs = m.specifications || {}
+  return Object.entries(specs).map(([k, v]) => ({ k, v }))
+}
 </script>
 
 <template>
@@ -96,6 +102,7 @@ async function runChecks() {
             <th>{{ t.mapping.th.refdes }}</th>
             <th>{{ t.mapping.th.component }}</th>
             <th>{{ t.mapping.th.yaml }}</th>
+            <th>{{ t.mapping.th.spec }}</th>
           </tr>
         </thead>
         <tbody>
@@ -117,6 +124,19 @@ async function runChecks() {
                 <option value="">{{ t.mapping.unassigned }}</option>
                 <option v-for="f in store.yamlFiles" :key="f" :value="f">{{ f }}</option>
               </select>
+            </td>
+            <td class="td-spec">
+              <template v-if="m.specFile">
+                <div class="spec-source">{{ m.specFile }}</div>
+                <div class="spec-badges">
+                  <span
+                    v-for="badge in specBadges(m)"
+                    :key="badge.k"
+                    class="spec-badge"
+                  >{{ badge.k }}={{ badge.v }}</span>
+                </div>
+              </template>
+              <span v-else class="no-spec">—</span>
             </td>
           </tr>
         </tbody>
@@ -143,7 +163,7 @@ async function runChecks() {
 </template>
 
 <style scoped>
-.mapping-page { max-width: 900px; margin: 0 auto; }
+.mapping-page { max-width: 1000px; margin: 0 auto; }
 
 .page-header { margin-bottom: 20px; }
 h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
@@ -179,7 +199,7 @@ h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; 
 
 /* Table */
 .table-wrap {
-  max-height: 440px;
+  max-height: 480px;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -209,14 +229,35 @@ h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; 
   padding: 9px 14px;
   border-bottom: 1px solid #F5F7FA;
   color: var(--text);
+  vertical-align: top;
 }
 .a-table tbody tr:last-child td { border-bottom: none; }
-.td-check { width: 40px; text-align: center; }
-.td-refdes { font-family: ui-monospace, monospace; font-weight: 600; font-size: 13px; }
-.td-comp   { font-size: 12px; color: var(--text-sub); }
+.td-check { width: 40px; text-align: center; vertical-align: middle !important; }
+.td-refdes { font-family: ui-monospace, monospace; font-weight: 600; font-size: 13px; vertical-align: middle !important; }
+.td-comp   { font-size: 12px; color: var(--text-sub); vertical-align: middle !important; }
 
 .yaml-sel { width: 100%; font-size: 12px; }
 .yaml-sel.matched { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+/* Spec column */
+.td-spec { min-width: 160px; }
+.spec-source {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.spec-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.spec-badge {
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  background: #EEF6FF;
+  color: #1A6BB0;
+  border: 1px solid #C3DCFF;
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+.no-spec { color: #ccc; font-size: 13px; }
 
 /* Footer */
 .footer {

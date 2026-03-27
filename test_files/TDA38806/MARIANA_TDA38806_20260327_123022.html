@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CircuitChecker — MARIANA_TDA38806.asc</title>
+<style>
+  body { font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 32px; background:#F5F7FA; color:#1A1A2E; }
+  .card { background:#fff; border:1px solid #E4E8EE; border-radius:8px; padding:24px 28px; margin-bottom:20px; }
+  .card-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#777; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #E4E8EE; }
+  h1 { font-size:22px; font-weight:700; letter-spacing:-0.3px; margin:0 0 4px; }
+  .meta { font-size:13px; color:#777; }
+  .summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .stat { text-align:center; padding:16px; border-radius:6px; background:#F5F7FA; }
+  .stat-num { font-size:28px; font-weight:700; }
+  .stat-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:#777; margin-top:4px; }
+  ul { margin:6px 0; padding-left:20px; font-size:13px; color:#555; }
+  .footer { margin-top:32px; font-size:11px; color:#AAA; text-align:center; border-top:1px solid #E4E8EE; padding-top:16px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1><span style="color:#009B77">Circuit</span><span style="color:#1A1A2E">Checker</span> &nbsp;<span style="font-size:15px;font-weight:400;color:#777">— Circuit Check Report</span></h1>
+    <div class="meta" style="margin-top:6px">Exported: 2026-03-27 12:30:22 &nbsp;|&nbsp; Netlist: MARIANA_TDA38806.asc &nbsp;|&nbsp; BOM: MARIANA_TDA38806.BOM</div>
+    <div class="meta" style="margin-top:6px">Rule YAML files:<ul><li>TDA38806 (1).yaml</li></ul></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Summary</div>
+    <div class="summary-grid">
+      <div class="stat"><div class="stat-num">2</div><div class="stat-label">ICs Checked</div></div>
+      <div class="stat"><div class="stat-num" style="color:#007A52">12</div><div class="stat-label">Pass</div></div>
+      <div class="stat"><div class="stat-num" style="color:#B07700">0</div><div class="stat-label">Warning</div></div>
+      <div class="stat"><div class="stat-num" style="color:#C0392B">2</div><div class="stat-label">Error</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Detailed Results</div>
+    
+        <div style="border:1px solid #E4E8EE;border-radius:8px;margin-bottom:14px;overflow:hidden">
+          <div style="padding:10px 16px;background:#F5F7FA;display:flex;align-items:center;gap:12px;border-left:4px solid #E84040">
+            <span style="background:#FFF0EE;color:#C0392B;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">ERROR</span>
+            <strong style="font-size:14px">U69</strong>
+            <span style="color:#777;font-size:13px">(TDA38806)</span>
+            <span style="color:#AAA;font-size:12px">TDA38806 (1).yaml</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="background:#F5F7FA">
+                <th style="padding:7px 12px;text-align:left;width:36px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">#</th>
+                <th style="padding:7px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">Description</th>
+                <th style="padding:7px 12px;text-align:center;width:90px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">Status</th>
+                <th style="padding:7px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">1</td>
+              <td style="padding:6px 10px">QFN-14</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">Found 14 pins</td>
+            </tr>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">2</td>
+              <td style="padding:6px 10px">FCCM 1.1Mhz</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">R1570 (0ohm) on N79433190, other pin on P1V8_AUX_AGND</td>
+            </tr>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">3</td>
+              <td style="padding:6px 10px">Vcc to GND needs 2.2uF mininum</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">C1805 (2.2uF) on VCC_P1V8_AUX, other pin on GND</td>
+            </tr>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">4</td>
+              <td style="padding:6px 10px">CS pin</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">R1594 (4.7Kohm) on OCP_P1V8_AUX, other pin on P1V8_AUX_AGND</td>
+            </tr>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">5</td>
+              <td style="padding:6px 10px">SS pin</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">C1935 (33nF) on SS_P1V8_AUX, other pin on P1V8_AUX_AGND</td>
+            </tr>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">6</td>
+              <td style="padding:6px 10px">SW pins connects</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">Both pins on equivalent net SW_P1V8_AUX</td>
+            </tr>
+            <tr style="background:#FFF9F9">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">7</td>
+              <td style="padding:6px 10px">pin needs any value resistor to </td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#FFF0EE;color:#C0392B;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">ERROR</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">pin not found in netlist</td>
+            </tr></tbody>
+          </table>
+        </div>
+        <div style="border:1px solid #E4E8EE;border-radius:8px;margin-bottom:14px;overflow:hidden">
+          <div style="padding:10px 16px;background:#F5F7FA;display:flex;align-items:center;gap:12px;border-left:4px solid #E84040">
+            <span style="background:#FFF0EE;color:#C0392B;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">ERROR</span>
+            <strong style="font-size:14px">U78</strong>
+            <span style="color:#777;font-size:13px">(TDA38806)</span>
+            <span style="color:#AAA;font-size:12px">TDA38806 (1).yaml</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="background:#F5F7FA">
+                <th style="padding:7px 12px;text-align:left;width:36px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">#</th>
+                <th style="padding:7px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">Description</th>
+                <th style="padding:7px 12px;text-align:center;width:90px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">Status</th>
+                <th style="padding:7px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#777;border-bottom:1px solid #E4E8EE">Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">1</td>
+              <td style="padding:6px 10px">QFN-14</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">Found 14 pins</td>
+            </tr>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">2</td>
+              <td style="padding:6px 10px">FCCM 1.1Mhz</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">R1664 (0ohm) on N79433057, other pin on P3V3_AUX_AGND</td>
+            </tr>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">3</td>
+              <td style="padding:6px 10px">Vcc to GND needs 2.2uF mininum</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">C2205 (2.2uF) on VCC_P3V3_AUX, other pin on GND</td>
+            </tr>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">4</td>
+              <td style="padding:6px 10px">CS pin</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">R1706 (4.7Kohm) on OCP_P3V3_AUX, other pin on P3V3_AUX_AGND</td>
+            </tr>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">5</td>
+              <td style="padding:6px 10px">SS pin</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">C2337 (33nF) on SS_P3V3_AUX, other pin on P3V3_AUX_AGND</td>
+            </tr>
+            <tr style="background:#F9FFFC">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">6</td>
+              <td style="padding:6px 10px">SW pins connects</td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#E6F7F2;color:#007A52;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">PASS</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">Both pins on equivalent net SW_P3V3_AUX</td>
+            </tr>
+            <tr style="background:#FFF9F9">
+              <td style="color:#bbb;text-align:center;padding:6px 10px">7</td>
+              <td style="padding:6px 10px">pin needs any value resistor to </td>
+              <td style="padding:6px 10px;text-align:center"><span style="background:#FFF0EE;color:#C0392B;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.3px">ERROR</span></td>
+              <td style="padding:6px 10px;color:#555;font-size:12px">pin not found in netlist</td>
+            </tr></tbody>
+          </table>
+        </div>
+  </div>
+
+  <div class="footer">Generated by Circuit Checker · 2026-03-27 12:30:22</div>
+</body>
+</html>

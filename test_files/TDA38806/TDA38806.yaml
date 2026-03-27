@@ -1,0 +1,62 @@
+component: TDA38806
+gnd_nets:
+  - GND
+  - PGND
+  - P1V8_AUX_AGND
+  - P3V3_AUX_AGND
+
+rules:
+  - type: pin_count
+    count:
+      - 14
+    severity: error
+    description: QFN-14
+
+  # Pin 12: FSW/Mode resistor — value resolved from TDA38806.spec via rail spec's fsw
+  - type: pin_to_net_resistor
+    pin: '12'
+    net: GND
+    min_value: "${pin12_resistor}"
+    max_value: "${pin12_resistor}"
+    severity: error
+    description: "FSW/Mode setting resistor (${fsw})"
+
+  # Pin 13: VCC bypass cap
+  - type: pin_to_gnd_cap
+    pin: '13'
+    capacitance: 2.2uF
+    severity: error
+    description: Vcc pin needs 2.2uF bypass cap
+
+  # Pin 4: OCP resistor
+  - type: pin_to_net_resistor
+    pin: '4'
+    net: GND
+    min_value: 4.7k
+    max_value: 4.7k
+    severity: error
+    description: OCP setting resistor 4.7k
+
+  # Pin 8: Soft-start cap
+  - type: pin_to_gnd_cap
+    pin: '8'
+    capacitance: 33nF
+    severity: error
+    description: SS pin soft-start cap 33nF
+
+  # Pin 2 and Pin 11: SW node must be connected together
+  - type: pin_to_pin_connection
+    pin1: '2'
+    pin2: '11'
+    severity: error
+    description: SW pins (2 & 11) must be connected
+
+  # Pin 6: FB voltage divider → verify Vout matches rail spec
+  - type: fb_vout_divider
+    pin: '6'
+    fb_voltage: "${pin6_fb_voltage}"
+    vout: "${vout}"
+    vout_net: "${rail_name}"
+    tolerance: 0.02
+    severity: error
+    description: "FB divider (Vfb=${pin6_fb_voltage}): calculated Vout must match ${vout}"

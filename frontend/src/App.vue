@@ -6,14 +6,15 @@ import FileUpload from './components/FileUpload.vue'
 import YamlGenerator from './components/YamlGenerator.vue'
 import RuleMapping from './components/RuleMapping.vue'
 import ResultsDisplay from './components/ResultsDisplay.vue'
+import SpecEditor from './components/SpecEditor.vue'
 
 const store = useAppStore()
 const t = useT()
 const activeTab = ref(0)
 
-const TAB_KEYS = ['upload', 'yaml', 'mapping', 'results']
+const TAB_KEYS = ['upload', 'yaml', 'spec', 'mapping', 'results']
 
-const tabDisabled = (idx) => idx >= 2 ? !store.canCheck : false
+const tabDisabled = (idx) => idx >= 3 ? !store.canCheck : false
 
 function selectTab(idx) {
   if (!tabDisabled(idx)) activeTab.value = idx
@@ -29,7 +30,7 @@ function selectTab(idx) {
           <span class="logo-text">
             <span class="logo-circuit">Circuit</span><span class="logo-checker">Checker</span>
           </span>
-          <span class="logo-version">rev0.1</span>
+          <span class="logo-version">rev0.3</span>
         </div>
       </div>
 
@@ -53,8 +54,9 @@ function selectTab(idx) {
     <main class="tab-content">
       <FileUpload    v-if="activeTab === 0" @go-next="activeTab = 1" />
       <YamlGenerator v-else-if="activeTab === 1" @go-next="activeTab = 2" />
-      <RuleMapping   v-else-if="activeTab === 2" @go-results="activeTab = 3" />
-      <ResultsDisplay v-else-if="activeTab === 3" />
+      <SpecEditor    v-else-if="activeTab === 2" />
+      <RuleMapping   v-else-if="activeTab === 3" @go-results="activeTab = 4" />
+      <ResultsDisplay v-else-if="activeTab === 4" />
     </main>
   </div>
 </template>

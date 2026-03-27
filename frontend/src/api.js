@@ -24,6 +24,14 @@ export const uploadYAML = (files) => {
   })
 }
 
+export const uploadSpec = (files) => {
+  const fd = new FormData()
+  for (const f of files) fd.append('files', f)
+  return axios.post('/api/upload/spec', fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
 export const getStatus = () => axios.get('/api/status')
 
 export const runCheck = (mappings) =>
@@ -37,6 +45,18 @@ export const deleteYaml = (filename) =>
 
 export const generateYaml = (ruleset) =>
   axios.post('/api/yaml/generate', ruleset)
+
+export const getRailSpecContent = (filename) =>
+  axios.get(`/api/spec/rail/${encodeURIComponent(filename)}`)
+
+export const getIcSpecContent = (component) =>
+  axios.get(`/api/spec/ic/${encodeURIComponent(component)}`)
+
+export const generateRailSpec = (data) =>
+  axios.post('/api/spec/rail/generate', data)
+
+export const generateIcSpec = (data) =>
+  axios.post('/api/spec/ic/generate', data)
 
 export const exportReport = (results, yamlFilesUsed) =>
   axios.post('/api/export', { results, yaml_files_used: yamlFilesUsed }, { responseType: 'blob' })

@@ -3,19 +3,23 @@ Circuit Checker Backend - FastAPI application.
 """
 from __future__ import annotations
 import io
+import os
 import zipfile
 from datetime import datetime
 from typing import List
 import yaml
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from parsers.asc_parser import parse_asc
 from parsers.bom_parser import parse_bom
-from checker.rule_loader import load_ruleset, ComponentRuleSet
+from checker.rule_loader import load_ruleset, resolve_rules, ComponentRuleSet
 from checker.rule_checker import check_ic
+from parsers.spec_parser import parse_rail_spec, RailSpec
+from parsers.ic_spec_parser import parse_ic_spec, IcSpec, build_var_table
 
 app = FastAPI(title="Circuit Checker")
 
@@ -34,6 +38,10 @@ store: dict = {
     "valuemap": None,
     "rulesets": {},       # {filename: ComponentRuleSet}
     "yaml_contents": {},  # {filename: raw yaml string}
+    "rail_specs": {},         # {filename: RailSpec}  — named by rail (P1V8_AUX.spec)
+    "rail_spec_contents": {},# {filename: raw yaml str}
+    "ic_specs": {},           # {component: IcSpec}   — keyed by component name (TDA38806)
+    "ic_spec_contents": {},  # {component: raw yaml str}
     "asc_filename": "",
     "asc_content": "",
     "bom_filename": "",
@@ -96,20 +104,69 @@ async def upload_yaml(files: List[UploadFile] = File(...)):
             ruleset = load_ruleset(content)
             store["rulesets"][filename] = ruleset
             store["yaml_contents"][filename] = content
-            loaded.append(filename)
+            loaded.append({"filename": filename})
         except Exception as e:
             errors.append({"file": filename, "error": str(e)})
     return {"status": "ok", "loaded": loaded, "errors": errors}
+
+
+@app.post("/api/upload/spec")
+async def upload_spec(files: List[UploadFile] = File(...)):
+    """Upload .spec files — auto-detects rail spec (has rail_name) vs IC spec (has pin_parameters)."""
+    rail_loaded = []
+    ic_loaded = []
+    errors = []
+    for file in files:
+        content = (await file.read()).decode("utf-8", errors="replace")
+        filename = file.filename or "unknown.spec"
+        try:
+            data = yaml.safe_load(content)
+            if "pin_parameters" in data:
+                # IC spec (e.g. TDA38806.spec)
+                ic_spec = parse_ic_spec(content)
+                store["ic_specs"][ic_spec.component] = ic_spec
+                store["ic_spec_contents"][ic_spec.component] = content
+                ic_loaded.append({"filename": filename, "component": ic_spec.component})
+            else:
+                # Rail spec (e.g. P1V8_AUX.spec)
+                rail_spec = parse_rail_spec(content)
+                store["rail_specs"][filename] = rail_spec
+                store["rail_spec_contents"][filename] = content
+                rail_loaded.append({
+                    "filename": filename,
+                    "rail_name": rail_spec.rail_name,
+                    "ref_des": rail_spec.ref_des,
+                    "component": rail_spec.component,
+                    "specifications": rail_spec.specifications,
+                    "variables": rail_spec.variables,
+                })
+        except Exception as e:
+            errors.append({"file": filename, "error": str(e)})
+    return {"status": "ok", "rail_specs": rail_loaded, "ic_specs": ic_loaded, "errors": errors}
 
 
 @app.get("/api/status")
 async def get_status():
     partmap = store["partmap"] or {}
     ic_refs = _detect_ic_refs(partmap) if partmap else []
+    rail_specs = [
+        {
+            "filename": fname,
+            "rail_name": spec.rail_name,
+            "ref_des": spec.ref_des,
+            "component": spec.component,
+            "specifications": spec.specifications,
+            "variables": spec.variables,
+        }
+        for fname, spec in store["rail_specs"].items()
+    ]
+    ic_spec_names = list(store["ic_specs"].keys())
     return {
         "asc_loaded": store["partmap"] is not None,
         "bom_loaded": store["valuemap"] is not None,
         "yaml_files": list(store["rulesets"].keys()),
+        "rail_specs": rail_specs,
+        "ic_specs": ic_spec_names,
         "ic_refs": ic_refs,
     }
 
@@ -130,6 +187,11 @@ async def run_check(req: CheckRequest):
     if store["valuemap"] is None:
         raise HTTPException(400, "BOM file not loaded")
 
+    # Build ref_des → rail_spec lookup
+    ref_to_rail_spec: dict[str, RailSpec] = {
+        spec.ref_des: spec for spec in store["rail_specs"].values()
+    }
+
     results = []
     for mapping in req.mappings:
         ref_des = mapping.ref_des
@@ -145,18 +207,57 @@ async def run_check(req: CheckRequest):
             })
             continue
 
+        # Resolve ${...} placeholders from rail spec + IC spec
+        rail_spec = ref_to_rail_spec.get(ref_des)
+        ic_spec = store["ic_specs"].get(ruleset.component) if rail_spec else None
+        var_table = build_var_table(rail_spec, ic_spec) if rail_spec else {}
+        resolved = resolve_rules(ruleset, var_table)
+
         ic_result = check_ic(
             ref_des=ref_des,
-            ruleset=ruleset,
+            ruleset=resolved,
             partmap=store["partmap"],
             netmap=store["netmap"],
             pinmap=store["pinmap"],
             valuemap=store["valuemap"],
         )
         ic_result["yaml_file"] = yaml_file
+        if rail_spec:
+            ic_result["rail_name"] = rail_spec.rail_name
+            ic_result["specifications"] = rail_spec.specifications
         results.append(ic_result)
 
     return {"results": results}
+
+
+@app.get("/api/spec/rail/{filename}")
+async def get_rail_spec(filename: str):
+    content = store["rail_spec_contents"].get(filename)
+    if content is None:
+        raise HTTPException(404, f"Rail spec '{filename}' not found")
+    return PlainTextResponse(content, media_type="text/plain")
+
+
+@app.get("/api/spec/ic/{component}")
+async def get_ic_spec(component: str):
+    content = store["ic_spec_contents"].get(component)
+    if content is None:
+        raise HTTPException(404, f"IC spec '{component}' not found")
+    return PlainTextResponse(content, media_type="text/plain")
+
+
+@app.post("/api/spec/rail/generate")
+async def generate_rail_spec(data: dict):
+    """Validate and return a rail spec as formatted YAML text."""
+    yaml_text = yaml.dump(data, allow_unicode=True, sort_keys=False, default_flow_style=False)
+    return PlainTextResponse(yaml_text, media_type="text/plain")
+
+
+@app.post("/api/spec/ic/generate")
+async def generate_ic_spec(data: dict):
+    """Validate and return an IC spec as formatted YAML text."""
+    yaml_text = yaml.dump(data, allow_unicode=True, sort_keys=False, default_flow_style=False)
+    return PlainTextResponse(yaml_text, media_type="text/plain")
 
 
 @app.get("/api/yaml/{filename}")
@@ -316,3 +417,15 @@ async def export_report(req: ExportRequest):
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{zip_name}"'},
     )
+
+
+# ── Serve Vue SPA (production / Docker) ───────────────────────────────────────
+
+_STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+
+if os.path.isdir(_STATIC_DIR):
+    app.mount("/assets", StaticFiles(directory=os.path.join(_STATIC_DIR, "assets")), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        return FileResponse(os.path.join(_STATIC_DIR, "index.html"))

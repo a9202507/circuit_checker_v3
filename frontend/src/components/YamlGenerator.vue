@@ -22,7 +22,8 @@ function addRule() {
     description: '',
     count: '52, 53',
     pin1: '', pin2: '', pin: '', capacitance: '',
-    net: '', min_value: '', max_value: '',
+    net: '', min_value: '', max_value: '', cap_count: '',
+    fb_voltage: '', vout: '', vout_net: '', tolerance: '0.02',
   })
 }
 
@@ -46,6 +47,17 @@ function buildRuleObj(r) {
     base.net = r.net.trim()
     if (r.min_value.trim()) base.min_value = r.min_value.trim()
     if (r.max_value.trim()) base.max_value = r.max_value.trim()
+    if (r.type === 'pin_to_net_capacitor' && r.cap_count.trim()) {
+      const n = parseInt(r.cap_count.trim())
+      if (!isNaN(n)) base.count = n
+    }
+  } else if (r.type === 'fb_vout_divider') {
+    base.pin = r.pin.trim()
+    base.fb_voltage = r.fb_voltage.trim()
+    base.vout = r.vout.trim()
+    if (r.vout_net.trim()) base.vout_net = r.vout_net.trim()
+    const tol = parseFloat(r.tolerance)
+    if (!isNaN(tol)) base.tolerance = tol
   }
   return base
 }
@@ -119,9 +131,13 @@ function applyYamlData(data) {
   for (const r of data.rules || []) {
     rules.push({
       type: r.type, severity: r.severity || 'error', description: r.description || '',
-      count: [].concat(r.count || []).join(', '), pin1: r.pin1 || '', pin2: r.pin2 || '',
+      count: r.type === 'pin_count' ? [].concat(r.count || []).join(', ') : '52, 53',
+      pin1: r.pin1 || '', pin2: r.pin2 || '',
       pin: r.pin || '', capacitance: r.capacitance || '',
       net: r.net || '', min_value: r.min_value || '', max_value: r.max_value || '',
+      cap_count: (r.type === 'pin_to_net_capacitor' && r.count != null) ? String(r.count) : '',
+      fb_voltage: r.fb_voltage || '', vout: r.vout || '',
+      vout_net: r.vout_net || '', tolerance: r.tolerance != null ? String(r.tolerance) : '0.02',
     })
   }
 }
@@ -254,6 +270,33 @@ function applyYamlData(data) {
             <label>{{ t.yaml.fields.maxValue }}</label>
             <input v-model="r.max_value" class="a-input"
               :placeholder="r.type === 'pin_to_net_inductor' ? t.yaml.fields.indPh : r.type === 'pin_to_net_resistor' ? t.yaml.fields.resPh : t.yaml.fields.capPh" />
+          </div>
+          <div v-if="r.type === 'pin_to_net_capacitor'" class="rf short">
+            <label>{{ t.yaml.fields.capCount }}</label>
+            <input v-model="r.cap_count" class="a-input" :placeholder="t.yaml.fields.capCountPh" />
+          </div>
+        </template>
+
+        <template v-else-if="r.type === 'fb_vout_divider'">
+          <div class="rf short">
+            <label>{{ t.yaml.fields.pin }}</label>
+            <input v-model="r.pin" class="a-input" placeholder="e.g. 6" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.fbVoltage }}</label>
+            <input v-model="r.fb_voltage" class="a-input" placeholder="e.g. 0.6V or ${pin6_fb_voltage}" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.vout }}</label>
+            <input v-model="r.vout" class="a-input" placeholder="e.g. 1.8V or ${vout}" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.voutNet }}</label>
+            <input v-model="r.vout_net" class="a-input" placeholder="e.g. P1V8_AUX or ${rail_name}" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.tolerance }}</label>
+            <input v-model="r.tolerance" class="a-input" placeholder="e.g. 0.02" />
           </div>
         </template>
 

@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useAppStore } from '../stores/appStore'
 import { useT } from '../i18n'
-import { uploadASC, uploadBOM, uploadYAML } from '../api'
+import { uploadASC, uploadBOM, uploadYAML, uploadSpec } from '../api'
 
 const emit = defineEmits(['go-next'])
 const store = useAppStore()
@@ -11,12 +11,15 @@ const t = useT()
 const ascStatus    = ref(null)   // null | 'loading' | 'ok' | 'error'
 const bomStatus    = ref(null)
 const yamlStatus   = ref(null)
+const specStatus   = ref(null)
 const ascError     = ref('')
 const bomError     = ref('')
 const yamlError    = ref('')
+const specError    = ref('')
 const ascFileName  = ref('')
 const bomFileName  = ref('')
 const yamlFileNames = ref([])
+const specFileNames = ref([])
 
 async function handleAsc(e) {
   const file = e.target.files[0]
@@ -59,7 +62,8 @@ async function handleYaml(e) {
     const res = await uploadYAML(files)
     const { loaded, errors } = res.data
     store.addYamlFiles(loaded)
-    yamlFileNames.value = [...new Set([...yamlFileNames.value, ...loaded])]
+    const names = loaded.map(item => typeof item === 'string' ? item : item.filename)
+    yamlFileNames.value = [...new Set([...yamlFileNames.value, ...names])]
     if (errors.length) {
       yamlStatus.value = 'error'
       yamlError.value = errors.map(e => `${e.file}: ${e.error}`).join('\n')
@@ -69,6 +73,32 @@ async function handleYaml(e) {
   } catch (err) {
     yamlStatus.value = 'error'
     yamlError.value = err.response?.data?.detail || err.message
+  }
+}
+
+async function handleSpec(e) {
+  const files = Array.from(e.target.files)
+  if (!files.length) return
+  specStatus.value = 'loading'
+  specError.value = ''
+  try {
+    const res = await uploadSpec(files)
+    const { rail_specs, ic_specs, errors } = res.data
+    store.addSpecs({ rail_specs, ic_specs })
+    const allNames = [
+      ...(rail_specs || []).map(s => s.filename),
+      ...(ic_specs || []).map(s => s.filename),
+    ]
+    specFileNames.value = [...new Set([...specFileNames.value, ...allNames])]
+    if (errors && errors.length) {
+      specStatus.value = 'error'
+      specError.value = errors.map(e => `${e.file}: ${e.error}`).join('\n')
+    } else {
+      specStatus.value = 'ok'
+    }
+  } catch (err) {
+    specStatus.value = 'error'
+    specError.value = err.response?.data?.detail || err.message
   }
 }
 
@@ -164,6 +194,33 @@ function triggerInput(id) {
         </div>
         <div v-if="yamlStatus === 'error'" class="status-err" style="white-space:pre-line">✗ {{ yamlError }}</div>
       </div>
+
+      <!-- Spec -->
+      <div class="zone" :class="{ 'zone-ok': specStatus === 'ok', 'zone-err': specStatus === 'error' }">
+        <div class="zone-icon">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M 18 12 L 46 12 Q 50 12 50 16 L 50 52 Q 50 56 46 56 L 18 56 Q 14 56 14 52 L 14 16 Q 14 12 18 12"/>
+              <path d="M 22 24 L 42 24"/>
+              <path d="M 22 32 L 36 32"/>
+              <path d="M 22 40 L 38 40"/>
+              <circle cx="40" cy="44" r="8"/>
+              <path d="M 37 44 L 40 47 L 44 41"/>
+            </g>
+          </svg>
+        </div>
+        <div class="zone-title">{{ t.upload.spec.title }}</div>
+        <div class="zone-sub">{{ t.upload.spec.sub }}</div>
+        <input id="spec-input" type="file" accept=".spec,.yaml,.yml" multiple hidden @change="handleSpec" />
+        <button class="btn btn-primary zone-btn" @click="triggerInput('spec-input')">
+          {{ specStatus === 'loading' ? t.upload.uploading : t.upload.spec.btn }}
+        </button>
+        <div v-if="specFileNames.length" class="file-name">{{ specFileNames.join(', ') }}</div>
+        <div v-if="specStatus === 'ok'" class="status-ok">
+          ✓ {{ t.upload.spec.loaded.replace('{n}', store.railSpecs.length + store.icSpecNames.length) }}
+        </div>
+        <div v-if="specStatus === 'error'" class="status-err" style="white-space:pre-line">✗ {{ specError }}</div>
+      </div>
     </div>
 
     <div class="actions">
@@ -186,7 +243,7 @@ h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; 
 
 .upload-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }

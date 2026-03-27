@@ -6,16 +6,24 @@ export const useAppStore = defineStore('app', {
     bomLoaded: false,
     ascFilename: '',
     yamlFiles: [],        // list of loaded yaml filenames
+    railSpecs: [],        // [{filename, railName, refDes, component, specifications, variables}]
+    icSpecNames: [],      // list of IC component names that have a loaded .spec (e.g. ["TDA38806"])
     icRefs: [],           // detected IC ref designators
     allRefs: [],          // all ref designators
     componentTypes: {},   // {refDes: componentType}  e.g. {U93: "TDM24544"}
-    mappings: [],         // [{refDes, componentType, yamlFile, selected}]
+    mappings: [],         // [{refDes, componentType, yamlFile, selected, specFile, specifications}]
     checkResults: [],     // array of ICCheckResult
     isChecking: false,
   }),
   getters: {
     canCheck: (state) =>
       state.ascLoaded && state.bomLoaded && state.yamlFiles.length > 0,
+    // Build a refDes → railSpec lookup for RuleMapping UI
+    refToRailSpec: (state) => {
+      const map = {}
+      for (const s of state.railSpecs) map[s.refDes] = s
+      return map
+    },
   },
   actions: {
     setAscLoaded(data) {
@@ -25,7 +33,6 @@ export const useAppStore = defineStore('app', {
       this.allRefs = data.all_refs || []
       this.componentTypes = data.ic_component_types || {}
 
-      // Initialize mappings for new IC refs
       const existing = new Set(this.mappings.map(m => m.refDes))
       for (const ref of this.icRefs) {
         if (!existing.has(ref)) {
@@ -34,23 +41,26 @@ export const useAppStore = defineStore('app', {
             componentType: this.componentTypes[ref] || '',
             yamlFile: '',
             selected: false,
+            specFile: '',
+            specifications: {},
           })
         } else {
-          // update componentType in case ASC was re-uploaded
           const m = this.mappings.find(m => m.refDes === ref)
           if (m) m.componentType = this.componentTypes[ref] || ''
         }
       }
-      // Auto-match any already-loaded YAML files
       this._autoMatchYaml()
+      this._applyRailSpecs()
     },
     setBomLoaded() {
       this.bomLoaded = true
     },
-    addYamlFiles(filenames) {
-      for (const f of filenames) {
-        if (!this.yamlFiles.includes(f)) {
-          this.yamlFiles.push(f)
+    addYamlFiles(loadedItems) {
+      // loadedItems: array of {filename} objects (or plain strings for backward compat)
+      for (const item of loadedItems) {
+        const fname = typeof item === 'string' ? item : item.filename
+        if (!this.yamlFiles.includes(fname)) {
+          this.yamlFiles.push(fname)
         }
       }
       this._autoMatchYaml()
@@ -58,19 +68,52 @@ export const useAppStore = defineStore('app', {
     removeYamlFile(filename) {
       this.yamlFiles = this.yamlFiles.filter(f => f !== filename)
       for (const m of this.mappings) {
-        if (m.yamlFile === filename) m.yamlFile = ''
+        if (m.yamlFile === filename) {
+          m.yamlFile = ''
+          m.specFile = ''
+          m.specifications = {}
+        }
+      }
+    },
+    addSpecs({ rail_specs = [], ic_specs = [] }) {
+      // Rail specs: auto-fill IC mapping
+      for (const item of rail_specs) {
+        this.railSpecs = this.railSpecs.filter(s => s.refDes !== item.ref_des)
+        this.railSpecs.push({
+          filename: item.filename,
+          railName: item.rail_name,
+          refDes: item.ref_des,
+          component: item.component,
+          specifications: item.specifications || {},
+          variables: item.variables || {},
+        })
+      }
+      // IC specs: just track component names that have a spec loaded
+      for (const item of ic_specs) {
+        if (!this.icSpecNames.includes(item.component)) {
+          this.icSpecNames.push(item.component)
+        }
+      }
+      this._applyRailSpecs()
+    },
+    _applyRailSpecs() {
+      for (const spec of this.railSpecs) {
+        const m = this.mappings.find(m => m.refDes === spec.refDes)
+        if (!m) continue
+        // Auto-assign YAML by component name if available
+        const yamlCandidate = this.yamlFiles.find(f =>
+          f.replace(/\.ya?ml$/i, '').toLowerCase() === spec.component.toLowerCase()
+        )
+        if (yamlCandidate) m.yamlFile = yamlCandidate
+        m.specFile = spec.filename
+        m.specifications = spec.specifications || {}
+        m.selected = true
       }
     },
     setCheckResults(results) {
       this.checkResults = results
       this.isChecking = false
     },
-    /** Fuzzy-match component types to YAML filenames.
-     *  Only fills in mappings that have no yamlFile assigned yet.
-     *  Matching priority:
-     *   1. Exact (case-insensitive)
-     *   2. YAML base contains component type, or vice versa
-     */
     _autoMatchYaml() {
       for (const m of this.mappings) {
         if (m.yamlFile) continue
@@ -82,9 +125,8 @@ export const useAppStore = defineStore('app', {
           const base = f.replace(/\.ya?ml$/i, '').toLowerCase().trim()
           let score = 0
           if (base === comp) {
-            score = 3        // exact match
+            score = 3
           } else if (base.includes(comp) || comp.includes(base)) {
-            // prefer longer overlap
             const overlap = Math.min(base.length, comp.length)
             score = 1 + overlap / Math.max(base.length, comp.length)
           }

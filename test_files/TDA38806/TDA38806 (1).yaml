@@ -1,0 +1,47 @@
+component: TDA38806
+gnd_nets:
+- GND
+- PGND
+- P3V3_AUX_AGND
+rules:
+- type: pin_count
+  count:
+  - 14
+  severity: error
+  description: QFN-14
+- type: pin_to_net_resistor
+  pin: '12'
+  net: GND
+  min_value: '0'
+  max_value: null
+  severity: error
+  description: FCCM 1.1Mhz
+- type: pin_to_gnd_cap
+  pin: '13'
+  capacitance: 2.2uF
+  severity: error
+  description: Vcc to GND needs 2.2uF mininum
+- type: pin_to_net_resistor
+  pin: '4'
+  net: GND
+  min_value: 4.7k
+  max_value: 4.7K
+  severity: error
+  description: CS pin
+- type: pin_to_gnd_cap
+  pin: '8'
+  capacitance: 33nF
+  severity: error
+  description: SS pin
+- type: pin_to_pin_connection
+  pin1: '2'
+  pin2: '11'
+  severity: error
+  description: SW pins connects
+- type: pin_to_net_resistor
+  pin: ''
+  net: ''
+  min_value: null
+  max_value: null
+  severity: error
+  description: ''

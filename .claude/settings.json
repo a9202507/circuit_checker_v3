@@ -8,7 +8,26 @@
       "Skill(update-config)",
       "Skill(update-config:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Edit(~/.claude/skills/frontend-design/**)"
+      "Edit(~/.claude/skills/frontend-design/**)",
+      "Bash(docker --version)",
+      "Bash(docker buildx:*)",
+      "Bash(/Applications/Docker.app/Contents/Resources/bin/docker --version)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/home/.docker/bin/**)",
+      "Bash(/usr/local/bin/docker --version)",
+      "Bash(/usr/local/bin/docker info:*)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//Users/home/Applications/**)",
+      "Read(//Applications/**)",
+      "Bash(/usr/local/bin/docker version:*)",
+      "Bash(brew install:*)",
+      "Bash(/opt/homebrew/bin/podman machine:*)",
+      "Bash(/opt/homebrew/bin/podman version:*)",
+      "Bash(/tmp/test_full.py:*)",
+      "Bash(__NEW_LINE_fceb9d7810080361__ uv:*)",
+      "Bash(__NEW_LINE_3d9d7c8e9a139289__ uv:*)",
+      "Bash(podman build:*)",
+      "Bash(podman push:*)"
     ],
     "additionalDirectories": [
       "/Users/home/.claude/skills"
