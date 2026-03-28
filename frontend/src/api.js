@@ -32,6 +32,14 @@ export const uploadSpec = (files) => {
   })
 }
 
+export const uploadRegpair = (files) => {
+  const fd = new FormData()
+  for (const f of files) fd.append('files', f)
+  return axios.post('/api/upload/regpair', fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
 export const getStatus = () => axios.get('/api/status')
 
 export const runCheck = (mappings) =>

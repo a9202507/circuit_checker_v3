@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useAppStore } from '../stores/appStore'
 import { useT } from '../i18n'
-import { uploadASC, uploadBOM, uploadYAML, uploadSpec } from '../api'
+import { uploadASC, uploadBOM, uploadYAML, uploadSpec, uploadRegpair } from '../api'
 
 const emit = defineEmits(['go-next'])
 const store = useAppStore()
@@ -12,14 +12,17 @@ const ascStatus    = ref(null)   // null | 'loading' | 'ok' | 'error'
 const bomStatus    = ref(null)
 const yamlStatus   = ref(null)
 const specStatus   = ref(null)
+const regpairStatus = ref(null)
 const ascError     = ref('')
 const bomError     = ref('')
 const yamlError    = ref('')
 const specError    = ref('')
+const regpairError = ref('')
 const ascFileName  = ref('')
 const bomFileName  = ref('')
 const yamlFileNames = ref([])
 const specFileNames = ref([])
+const regpairFileNames = ref([])
 
 async function handleAsc(e) {
   const file = e.target.files[0]
@@ -99,6 +102,29 @@ async function handleSpec(e) {
   } catch (err) {
     specStatus.value = 'error'
     specError.value = err.response?.data?.detail || err.message
+  }
+}
+
+async function handleRegpair(e) {
+  const files = Array.from(e.target.files)
+  if (!files.length) return
+  regpairStatus.value = 'loading'
+  regpairError.value = ''
+  try {
+    const res = await uploadRegpair(files)
+    const { loaded, errors } = res.data
+    store.addRegpairFiles(loaded)
+    const names = loaded.map(item => typeof item === 'string' ? item : item.filename)
+    regpairFileNames.value = [...new Set([...regpairFileNames.value, ...names])]
+    if (errors && errors.length) {
+      regpairStatus.value = 'error'
+      regpairError.value = errors.map(e => `${e.file}: ${e.error}`).join('\n')
+    } else {
+      regpairStatus.value = 'ok'
+    }
+  } catch (err) {
+    regpairStatus.value = 'error'
+    regpairError.value = err.response?.data?.detail || err.message
   }
 }
 
@@ -220,6 +246,34 @@ function triggerInput(id) {
           ✓ {{ t.upload.spec.loaded.replace('{n}', store.railSpecs.length + store.icSpecNames.length) }}
         </div>
         <div v-if="specStatus === 'error'" class="status-err" style="white-space:pre-line">✗ {{ specError }}</div>
+      </div>
+
+      <!-- Regpair Config -->
+      <div class="zone" :class="{ 'zone-ok': regpairStatus === 'ok', 'zone-err': regpairStatus === 'error' }">
+        <div class="zone-icon">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="14" y="12" width="36" height="44" rx="4"/>
+              <path d="M 22 22 L 42 22"/>
+              <path d="M 22 30 L 38 30"/>
+              <path d="M 22 38 L 35 38"/>
+              <path d="M 22 46 L 30 46"/>
+              <circle cx="38" cy="44" r="2" fill="currentColor"/>
+              <circle cx="44" cy="44" r="2" fill="currentColor"/>
+            </g>
+          </svg>
+        </div>
+        <div class="zone-title">{{ t.upload.regpair.title }}</div>
+        <div class="zone-sub">{{ t.upload.regpair.sub }}</div>
+        <input id="regpair-input" type="file" accept=".txt" multiple hidden @change="handleRegpair" />
+        <button class="btn btn-primary zone-btn" @click="triggerInput('regpair-input')">
+          {{ regpairStatus === 'loading' ? t.upload.uploading : t.upload.regpair.btn }}
+        </button>
+        <div v-if="regpairFileNames.length" class="file-name">{{ regpairFileNames.join(', ') }}</div>
+        <div v-if="regpairStatus === 'ok'" class="status-ok">
+          ✓ {{ t.upload.regpair.loaded.replace('{n}', store.regpairFiles.length) }}
+        </div>
+        <div v-if="regpairStatus === 'error'" class="status-err" style="white-space:pre-line">✗ {{ regpairError }}</div>
       </div>
     </div>
 

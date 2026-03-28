@@ -20,6 +20,7 @@ from checker.rule_loader import load_ruleset, resolve_rules, ComponentRuleSet
 from checker.rule_checker import check_ic
 from parsers.spec_parser import parse_rail_spec, RailSpec
 from parsers.ic_spec_parser import parse_ic_spec, IcSpec, build_var_table
+from parsers.regpair_parser import parse_regpair, RegpairData
 
 app = FastAPI(title="Circuit Checker")
 
@@ -42,6 +43,8 @@ store: dict = {
     "rail_spec_contents": {},# {filename: raw yaml str}
     "ic_specs": {},           # {component: IcSpec}   — keyed by component name (TDA38806)
     "ic_spec_contents": {},  # {component: raw yaml str}
+    "regpairs": {},           # {filename: RegpairData}
+    "regpair_contents": {},   # {filename: raw text}
     "asc_filename": "",
     "asc_content": "",
     "bom_filename": "",
@@ -145,6 +148,28 @@ async def upload_spec(files: List[UploadFile] = File(...)):
     return {"status": "ok", "rail_specs": rail_loaded, "ic_specs": ic_loaded, "errors": errors}
 
 
+@app.post("/api/upload/regpair")
+async def upload_regpair(files: List[UploadFile] = File(...)):
+    """Upload regpair.txt config files for digital POL checking."""
+    loaded = []
+    errors = []
+    for file in files:
+        content = (await file.read()).decode("utf-8", errors="replace")
+        filename = file.filename or "unknown_regpair.txt"
+        try:
+            regpair = parse_regpair(content)
+            store["regpairs"][filename] = regpair
+            store["regpair_contents"][filename] = content
+            loaded.append({
+                "filename": filename,
+                "register_count": len(regpair.registers),
+                "pmbus_count": len(regpair.pmbus),
+            })
+        except Exception as e:
+            errors.append({"file": filename, "error": str(e)})
+    return {"status": "ok", "loaded": loaded, "errors": errors}
+
+
 @app.get("/api/status")
 async def get_status():
     partmap = store["partmap"] or {}
@@ -167,6 +192,7 @@ async def get_status():
         "yaml_files": list(store["rulesets"].keys()),
         "rail_specs": rail_specs,
         "ic_specs": ic_spec_names,
+        "regpair_files": list(store["regpairs"].keys()),
         "ic_refs": ic_refs,
     }
 
@@ -174,6 +200,7 @@ async def get_status():
 class MappingItem(BaseModel):
     ref_des: str
     yaml_file: str
+    regpair_file: str = ""
 
 
 class CheckRequest(BaseModel):
@@ -213,6 +240,9 @@ async def run_check(req: CheckRequest):
         var_table = build_var_table(rail_spec, ic_spec) if rail_spec else {}
         resolved = resolve_rules(ruleset, var_table)
 
+        # Look up regpair data if specified
+        regpair = store["regpairs"].get(mapping.regpair_file) if mapping.regpair_file else None
+
         ic_result = check_ic(
             ref_des=ref_des,
             ruleset=resolved,
@@ -220,6 +250,7 @@ async def run_check(req: CheckRequest):
             netmap=store["netmap"],
             pinmap=store["pinmap"],
             valuemap=store["valuemap"],
+            regpair=regpair,
         )
         ic_result["yaml_file"] = yaml_file
         if rail_spec:

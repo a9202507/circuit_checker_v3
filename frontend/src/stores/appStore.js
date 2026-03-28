@@ -8,6 +8,7 @@ export const useAppStore = defineStore('app', {
     yamlFiles: [],        // list of loaded yaml filenames
     railSpecs: [],        // [{filename, railName, refDes, component, specifications, variables}]
     icSpecNames: [],      // list of IC component names that have a loaded .spec (e.g. ["TDA38806"])
+    regpairFiles: [],     // list of loaded regpair filenames
     icRefs: [],           // detected IC ref designators
     allRefs: [],          // all ref designators
     componentTypes: {},   // {refDes: componentType}  e.g. {U93: "TDM24544"}
@@ -40,6 +41,7 @@ export const useAppStore = defineStore('app', {
             refDes: ref,
             componentType: this.componentTypes[ref] || '',
             yamlFile: '',
+            regpairFile: '',
             selected: false,
             specFile: '',
             specifications: {},
@@ -72,6 +74,14 @@ export const useAppStore = defineStore('app', {
           m.yamlFile = ''
           m.specFile = ''
           m.specifications = {}
+        }
+      }
+    },
+    addRegpairFiles(loadedItems) {
+      for (const item of loadedItems) {
+        const fname = typeof item === 'string' ? item : item.filename
+        if (!this.regpairFiles.includes(fname)) {
+          this.regpairFiles.push(fname)
         }
       }
     },

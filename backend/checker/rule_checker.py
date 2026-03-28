@@ -14,6 +14,9 @@ from .rule_loader import (
     PinToNetCapacitorRule,
     PinToNetInductorRule,
     FbVoutDividerRule,
+    PmbusVoutCheckRule,
+    PmbusLinear11CheckRule,
+    RegisterValueRule,
 )
 
 
@@ -195,6 +198,7 @@ def check_rule(
     pinmap: dict,
     valuemap: dict,
     equiv: dict[str, str] | None = None,
+    regpair=None,
 ) -> dict:
     """Check a single rule for a given IC instance. Returns a result dict."""
     if equiv is None:
@@ -228,6 +232,15 @@ def check_rule(
 
     if isinstance(rule, FbVoutDividerRule):
         return _check_fb_vout_divider(ref_des, rule, ruleset, partmap, netmap, pinmap, valuemap, equiv)
+
+    if isinstance(rule, PmbusVoutCheckRule):
+        return _check_pmbus_vout(rule, regpair)
+
+    if isinstance(rule, PmbusLinear11CheckRule):
+        return _check_pmbus_linear11(rule, regpair)
+
+    if isinstance(rule, RegisterValueRule):
+        return _check_register_value(rule, regpair)
 
     return {"rule_type": "unknown", "description": "", "status": "ERROR", "detail": "Unknown rule type"}
 
@@ -737,6 +750,177 @@ def _check_fb_vout_divider(
             "status": rule.severity.upper(), "detail": detail}
 
 
+# ── PMBus decode helpers ─────────────────────────────────────────────────────
+
+def _decode_linear16_vout(vout_mode_hex: str, vout_cmd_hex: str) -> float | None:
+    """Decode PMBus Linear16 VOUT: Vout = mantissa * 2^exponent."""
+    try:
+        mode_val = int(vout_mode_hex, 16)
+        cmd_val = int(vout_cmd_hex, 16)
+    except (ValueError, TypeError):
+        return None
+    # Exponent from VOUT_MODE[4:0], 5-bit 2's complement
+    exp = mode_val & 0x1F
+    if exp >= 16:
+        exp -= 32
+    return cmd_val * (2.0 ** exp)
+
+
+def _decode_linear11(hex_value: str) -> float | None:
+    """Decode PMBus Linear11: [15:11]=exponent, [10:0]=mantissa (both 2's complement)."""
+    try:
+        val = int(hex_value, 16)
+    except (ValueError, TypeError):
+        return None
+    # Exponent: bits [15:11], 5-bit 2's complement
+    exp = (val >> 11) & 0x1F
+    if exp >= 16:
+        exp -= 32
+    # Mantissa: bits [10:0], 11-bit 2's complement
+    mantissa = val & 0x7FF
+    if mantissa >= 1024:
+        mantissa -= 2048
+    return mantissa * (2.0 ** exp)
+
+
+def _normalize_numeric(value_str: str) -> float | None:
+    """Parse a numeric string that may have a unit suffix (V, kHz, A, etc.)."""
+    s = value_str.strip().lower().replace(" ", "")
+    # Try stripping common unit suffixes
+    for suffix in ["khz", "mhz", "hz", "v", "a", "w", "ohm"]:
+        if s.endswith(suffix):
+            s = s[: -len(suffix)]
+            break
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+# ── Digital POL config checkers ──────────────────────────────────────────────
+
+def _check_pmbus_vout(rule: PmbusVoutCheckRule, regpair) -> dict:
+    """Check VOUT_COMMAND via Linear16 decode against expected voltage."""
+    desc = rule.description or f"VOUT register check"
+
+    if regpair is None:
+        return {"rule_type": "pmbus_vout_check", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": "No regpair config file loaded for this IC"}
+
+    mode_hex = regpair.pmbus.get(rule.vout_mode_register)
+    cmd_hex = regpair.pmbus.get(rule.vout_command_register)
+
+    if mode_hex is None:
+        return {"rule_type": "pmbus_vout_check", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"Register '{rule.vout_mode_register}' not found in regpair"}
+    if cmd_hex is None:
+        return {"rule_type": "pmbus_vout_check", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"Register '{rule.vout_command_register}' not found in regpair"}
+
+    vout_calc = _decode_linear16_vout(mode_hex, cmd_hex)
+    if vout_calc is None:
+        return {"rule_type": "pmbus_vout_check", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"Cannot decode VOUT_MODE={mode_hex}, VOUT_COMMAND={cmd_hex}"}
+
+    expected = normalize_voltage(rule.expected_vout)
+    if expected is None:
+        expected = _normalize_numeric(rule.expected_vout)
+    if expected is None or expected == 0:
+        return {"rule_type": "pmbus_vout_check", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"Cannot parse expected voltage '{rule.expected_vout}'"}
+
+    error_pct = abs(vout_calc - expected) / expected
+    detail = (
+        f"VOUT_MODE=0x{mode_hex}, VOUT_COMMAND=0x{cmd_hex} → "
+        f"Vout={vout_calc:.4f}V (expected {rule.expected_vout}, err={error_pct*100:.2f}%)"
+    )
+
+    if error_pct <= rule.tolerance:
+        return {"rule_type": "pmbus_vout_check", "description": desc,
+                "status": "PASS", "detail": detail}
+    return {"rule_type": "pmbus_vout_check", "description": desc,
+            "status": rule.severity.upper(), "detail": detail}
+
+
+def _check_pmbus_linear11(rule: PmbusLinear11CheckRule, regpair) -> dict:
+    """Check a PMBus Linear11 register against expected value."""
+    desc = rule.description or f"PMBus {rule.register_name} check"
+
+    if regpair is None:
+        return {"rule_type": "pmbus_linear11_check", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": "No regpair config file loaded for this IC"}
+
+    hex_val = regpair.pmbus.get(rule.register_name)
+    if hex_val is None:
+        return {"rule_type": "pmbus_linear11_check", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"Register '{rule.register_name}' not found in regpair"}
+
+    decoded = _decode_linear11(hex_val)
+    if decoded is None:
+        return {"rule_type": "pmbus_linear11_check", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"Cannot decode Linear11 value 0x{hex_val}"}
+
+    expected = _normalize_numeric(rule.expected_value)
+    if expected is None:
+        return {"rule_type": "pmbus_linear11_check", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"Cannot parse expected value '{rule.expected_value}'"}
+
+    if expected == 0:
+        error_pct = 0.0 if decoded == 0 else 1.0
+    else:
+        error_pct = abs(decoded - expected) / abs(expected)
+
+    unit_str = f" {rule.unit}" if rule.unit else ""
+    detail = (
+        f"{rule.register_name}=0x{hex_val} → {decoded:.4g}{unit_str} "
+        f"(expected {rule.expected_value}{unit_str}, err={error_pct*100:.2f}%)"
+    )
+
+    if error_pct <= rule.tolerance:
+        return {"rule_type": "pmbus_linear11_check", "description": desc,
+                "status": "PASS", "detail": detail}
+    return {"rule_type": "pmbus_linear11_check", "description": desc,
+            "status": rule.severity.upper(), "detail": detail}
+
+
+def _check_register_value(rule: RegisterValueRule, regpair) -> dict:
+    """Check a config register bit-field against expected hex value."""
+    desc = rule.description or f"Register {rule.register_name} check"
+
+    if regpair is None:
+        return {"rule_type": "register_value", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": "No regpair config file loaded for this IC"}
+
+    # Search in both registers and pmbus sections
+    actual = regpair.registers.get(rule.register_name)
+    if actual is None:
+        actual = regpair.pmbus.get(rule.register_name)
+    if actual is None:
+        return {"rule_type": "register_value", "description": desc,
+                "status": rule.severity.upper(),
+                "detail": f"Register '{rule.register_name}' not found in regpair"}
+
+    # Compare as case-insensitive hex strings
+    if actual.lower() == rule.expected.lower():
+        return {"rule_type": "register_value", "description": desc,
+                "status": "PASS",
+                "detail": f"{rule.register_name}=0x{actual} (matches expected 0x{rule.expected})"}
+
+    return {"rule_type": "register_value", "description": desc,
+            "status": rule.severity.upper(),
+            "detail": f"{rule.register_name}=0x{actual} (expected 0x{rule.expected})"}
+
+
 # ── Top-level entry point ──────────────────────────────────────────────────────
 
 def check_ic(
@@ -746,13 +930,14 @@ def check_ic(
     netmap: dict,
     pinmap: dict,
     valuemap: dict,
+    regpair=None,
 ) -> dict:
     # Build net equivalence map for 0Ω resistor bridges
     equiv = _build_net_equiv(partmap, netmap, pinmap, valuemap)
 
     results = []
     for rule in ruleset.rules:
-        result = check_rule(ref_des, rule, ruleset, partmap, netmap, pinmap, valuemap, equiv)
+        result = check_rule(ref_des, rule, ruleset, partmap, netmap, pinmap, valuemap, equiv, regpair)
         results.append(result)
     return {
         "ref_des": ref_des,

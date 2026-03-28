@@ -51,6 +51,7 @@ async function runChecks() {
   const mappings = selectedMappings.value.map(m => ({
     ref_des: m.refDes,
     yaml_file: m.yamlFile,
+    regpair_file: m.regpairFile || '',
   }))
   try {
     const res = await runCheck(mappings)
@@ -102,6 +103,7 @@ function specBadges(m) {
             <th>{{ t.mapping.th.refdes }}</th>
             <th>{{ t.mapping.th.component }}</th>
             <th>{{ t.mapping.th.yaml }}</th>
+            <th>{{ t.mapping.th.config }}</th>
             <th>{{ t.mapping.th.spec }}</th>
           </tr>
         </thead>
@@ -123,6 +125,16 @@ function specBadges(m) {
               >
                 <option value="">{{ t.mapping.unassigned }}</option>
                 <option v-for="f in store.yamlFiles" :key="f" :value="f">{{ f }}</option>
+              </select>
+            </td>
+            <td>
+              <select
+                v-model="m.regpairFile"
+                class="a-select regpair-sel"
+                :class="{ matched: m.regpairFile }"
+              >
+                <option value="">—</option>
+                <option v-for="f in store.regpairFiles" :key="f" :value="f">{{ f }}</option>
               </select>
             </td>
             <td class="td-spec">
@@ -238,6 +250,9 @@ h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; 
 
 .yaml-sel { width: 100%; font-size: 12px; }
 .yaml-sel.matched { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+.regpair-sel { width: 100%; font-size: 12px; }
+.regpair-sel.matched { border-color: #8B5CF6; color: #7C3AED; background: #F5F3FF; }
 
 /* Spec column */
 .td-spec { min-width: 160px; }

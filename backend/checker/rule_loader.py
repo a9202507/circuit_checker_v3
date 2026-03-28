@@ -108,6 +108,44 @@ class FbVoutDividerRule(BaseModel):
     description: str = ""
 
 
+# ── Digital POL config rules (regpair-based) ─────────────────────────────────
+
+
+class PmbusVoutCheckRule(BaseModel):
+    """Check VOUT_COMMAND register against expected output voltage (Linear16 decode)."""
+    type: Literal["pmbus_vout_check"]
+    vout_mode_register: str = "VOUT_MODE"
+    vout_command_register: str = "VOUT_COMMAND"
+    expected_vout: str                # e.g. "0.9V"
+    tolerance: float = 0.03
+    severity: str = "error"
+    description: str = ""
+
+
+class PmbusLinear11CheckRule(BaseModel):
+    """Check a PMBus Linear11 register (FSW, OCP, etc.) against expected value."""
+    type: Literal["pmbus_linear11_check"]
+    register_name: str = Field(alias="register")  # PMBus command name, e.g. "FREQUENCY_SWITCH"
+    expected_value: str               # Numeric string, e.g. "400"
+    unit: str = ""                    # Display unit, e.g. "kHz", "A"
+    tolerance: float = 0.05
+    severity: str = "error"
+    description: str = ""
+
+    model_config = {"populate_by_name": True}
+
+
+class RegisterValueRule(BaseModel):
+    """Check a config register bit-field against expected hex value."""
+    type: Literal["register_value"]
+    register_name: str = Field(alias="register")  # Register name, e.g. "fccm_mode"
+    expected: str                     # Expected hex value, e.g. "1"
+    severity: str = "error"
+    description: str = ""
+
+    model_config = {"populate_by_name": True}
+
+
 Rule = Annotated[
     Union[
         PinCountRule,
@@ -119,6 +157,9 @@ Rule = Annotated[
         PinToNetCapacitorRule,
         PinToNetInductorRule,
         FbVoutDividerRule,
+        PmbusVoutCheckRule,
+        PmbusLinear11CheckRule,
+        RegisterValueRule,
     ],
     Field(discriminator="type"),
 ]
@@ -175,7 +216,7 @@ def resolve_rules(
 
     resolved_rules = []
     for rule in ruleset.rules:
-        rule_dict = rule.model_dump()
+        rule_dict = rule.model_dump(by_alias=True)
         for key, val in rule_dict.items():
             if isinstance(val, str):
                 rule_dict[key] = _resolve_str(val)

@@ -24,6 +24,8 @@ function addRule() {
     pin1: '', pin2: '', pin: '', capacitance: '',
     net: '', min_value: '', max_value: '', cap_count: '',
     fb_voltage: '', vout: '', vout_net: '', tolerance: '0.02',
+    vout_mode_register: 'VOUT_MODE', vout_command_register: 'VOUT_COMMAND',
+    expected_vout: '', register_name: '', expected_value: '', unit: '', expected: '',
   })
 }
 
@@ -58,6 +60,21 @@ function buildRuleObj(r) {
     if (r.vout_net.trim()) base.vout_net = r.vout_net.trim()
     const tol = parseFloat(r.tolerance)
     if (!isNaN(tol)) base.tolerance = tol
+  } else if (r.type === 'pmbus_vout_check') {
+    base.vout_mode_register = r.vout_mode_register.trim() || 'VOUT_MODE'
+    base.vout_command_register = r.vout_command_register.trim() || 'VOUT_COMMAND'
+    base.expected_vout = r.expected_vout.trim()
+    const tol = parseFloat(r.tolerance)
+    if (!isNaN(tol)) base.tolerance = tol
+  } else if (r.type === 'pmbus_linear11_check') {
+    base.register = r.register_name.trim()
+    base.expected_value = r.expected_value.trim()
+    if (r.unit.trim()) base.unit = r.unit.trim()
+    const tol = parseFloat(r.tolerance)
+    if (!isNaN(tol)) base.tolerance = tol
+  } else if (r.type === 'register_value') {
+    base.register = r.register_name.trim()
+    base.expected = r.expected.trim()
   }
   return base
 }
@@ -138,6 +155,11 @@ function applyYamlData(data) {
       cap_count: (r.type === 'pin_to_net_capacitor' && r.count != null) ? String(r.count) : '',
       fb_voltage: r.fb_voltage || '', vout: r.vout || '',
       vout_net: r.vout_net || '', tolerance: r.tolerance != null ? String(r.tolerance) : '0.02',
+      vout_mode_register: r.vout_mode_register || 'VOUT_MODE',
+      vout_command_register: r.vout_command_register || 'VOUT_COMMAND',
+      expected_vout: r.expected_vout || '',
+      register_name: r.register || '', expected_value: r.expected_value || '',
+      unit: r.unit || '', expected: r.expected || '',
     })
   }
 }
@@ -297,6 +319,55 @@ function applyYamlData(data) {
           <div class="rf short">
             <label>{{ t.yaml.fields.tolerance }}</label>
             <input v-model="r.tolerance" class="a-input" placeholder="e.g. 0.02" />
+          </div>
+        </template>
+
+        <template v-else-if="r.type === 'pmbus_vout_check'">
+          <div class="rf short">
+            <label>{{ t.yaml.fields.voutModeReg }}</label>
+            <input v-model="r.vout_mode_register" class="a-input" placeholder="VOUT_MODE" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.voutCmdReg }}</label>
+            <input v-model="r.vout_command_register" class="a-input" placeholder="VOUT_COMMAND" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.expectedVout }}</label>
+            <input v-model="r.expected_vout" class="a-input" placeholder="e.g. 0.9V or ${vout}" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.tolerance }}</label>
+            <input v-model="r.tolerance" class="a-input" placeholder="e.g. 0.03" />
+          </div>
+        </template>
+
+        <template v-else-if="r.type === 'pmbus_linear11_check'">
+          <div class="rf short">
+            <label>{{ t.yaml.fields.registerName }}</label>
+            <input v-model="r.register_name" class="a-input" placeholder="e.g. FREQUENCY_SWITCH" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.expectedValue }}</label>
+            <input v-model="r.expected_value" class="a-input" placeholder="e.g. 400" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.unit }}</label>
+            <input v-model="r.unit" class="a-input" placeholder="e.g. kHz" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.tolerance }}</label>
+            <input v-model="r.tolerance" class="a-input" placeholder="e.g. 0.05" />
+          </div>
+        </template>
+
+        <template v-else-if="r.type === 'register_value'">
+          <div class="rf short">
+            <label>{{ t.yaml.fields.registerName }}</label>
+            <input v-model="r.register_name" class="a-input" placeholder="e.g. fccm_mode" />
+          </div>
+          <div class="rf short">
+            <label>{{ t.yaml.fields.expected }}</label>
+            <input v-model="r.expected" class="a-input" placeholder="e.g. 1" />
           </div>
         </template>
 
