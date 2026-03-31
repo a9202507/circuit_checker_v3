@@ -11,13 +11,30 @@ const t = useT()
 const search   = ref('')
 const bulkYaml = ref('')
 
+function globToRegex(pattern) {
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+  return new RegExp('^' + escaped.replace(/\*/g, '.*').replace(/\?/g, '.') + '$', 'i')
+}
+
 const filtered = computed(() => {
-  const q = search.value.trim().toUpperCase()
-  return store.mappings.filter(m =>
-    !q ||
-    m.refDes.toUpperCase().includes(q) ||
-    m.componentType.toUpperCase().includes(q)
-  )
+  const raw = search.value.trim()
+  if (!raw) return store.mappings
+
+  const patterns = raw.split(/[;\s]+/).filter(Boolean)
+  const hasWildcard = patterns.some(p => p.includes('*') || p.includes('?'))
+
+  return store.mappings.filter(m => {
+    const ref  = m.refDes.toUpperCase()
+    const comp = m.componentType.toUpperCase()
+    if (hasWildcard) {
+      return patterns.some(p => globToRegex(p).test(ref))
+    } else {
+      return patterns.some(p => {
+        const q = p.toUpperCase()
+        return ref.includes(q) || comp.includes(q)
+      })
+    }
+  })
 })
 
 const selectedMappings = computed(() => store.mappings.filter(m => m.selected))

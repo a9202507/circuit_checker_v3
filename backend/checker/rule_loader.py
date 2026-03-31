@@ -4,7 +4,7 @@ YAML rule file loader and Pydantic models.
 from __future__ import annotations
 import re
 from typing import Annotated, Literal, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 import yaml
 
 
@@ -39,10 +39,17 @@ class PinToPinCapRule(BaseModel):
 
 class PinToPinConnectionRule(BaseModel):
     type: Literal["pin_to_pin_connection"]
-    pin1: str
-    pin2: str
+    pins: list[str] = []
+    pin1: str = ""  # legacy — kept for backward compat
+    pin2: str = ""  # legacy — kept for backward compat
     severity: str = "error"
     description: str = ""
+
+    @model_validator(mode="after")
+    def _normalize_pins(self):
+        if not self.pins:
+            self.pins = [p for p in [self.pin1, self.pin2] if p]
+        return self
 
 
 class PinFloatingRule(BaseModel):

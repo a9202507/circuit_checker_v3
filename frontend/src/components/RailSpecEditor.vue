@@ -165,7 +165,7 @@ function showAlert(msg, type = 'info') {
       <button class="btn-sm" :disabled="!selectedSession" @click="loadFromSession">{{ t.spec.rail.loadBtn }}</button>
       <span class="sep">|</span>
       <button class="btn-sm" @click="loadFromFile">{{ t.spec.rail.loadLocal }}</button>
-      <input ref="fileInput" type="file" accept=".spec,.yaml,.yml" style="display:none" @change="onFileChange" />
+      <input ref="fileInput" type="file" accept=".spec" style="display:none" @change="onFileChange" />
     </div>
 
     <!-- Alert -->

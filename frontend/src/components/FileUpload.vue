@@ -237,7 +237,7 @@ function triggerInput(id) {
         </div>
         <div class="zone-title">{{ t.upload.spec.title }}</div>
         <div class="zone-sub">{{ t.upload.spec.sub }}</div>
-        <input id="spec-input" type="file" accept=".spec,.yaml,.yml" multiple hidden @change="handleSpec" />
+        <input id="spec-input" type="file" accept=".spec" multiple hidden @change="handleSpec" />
         <button class="btn btn-primary zone-btn" @click="triggerInput('spec-input')">
           {{ specStatus === 'loading' ? t.upload.uploading : t.upload.spec.btn }}
         </button>

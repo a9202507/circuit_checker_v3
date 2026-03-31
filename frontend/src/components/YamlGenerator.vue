@@ -21,7 +21,7 @@ function addRule() {
     severity: 'error',
     description: '',
     count: '52, 53',
-    pin1: '', pin2: '', pin: '', capacitance: '',
+    pins: '', pin1: '', pin2: '', pin: '', capacitance: '',
     net: '', min_value: '', max_value: '', cap_count: '',
     fb_voltage: '', vout: '', vout_net: '', tolerance: '0.02',
     vout_mode_register: 'VOUT_MODE', vout_command_register: 'VOUT_COMMAND',
@@ -37,7 +37,7 @@ function buildRuleObj(r) {
   if (r.type === 'pin_count') {
     base.count = r.count.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
   } else if (r.type === 'pin_to_pin_connection') {
-    base.pin1 = r.pin1.trim(); base.pin2 = r.pin2.trim()
+    base.pins = r.pins.split(',').map(s => s.trim()).filter(Boolean)
   } else if (r.type === 'pin_to_gnd_cap') {
     base.pin = r.pin.trim(); base.capacitance = r.capacitance.trim()
   } else if (r.type === 'pin_to_pin_cap') {
@@ -149,6 +149,7 @@ function applyYamlData(data) {
     rules.push({
       type: r.type, severity: r.severity || 'error', description: r.description || '',
       count: r.type === 'pin_count' ? [].concat(r.count || []).join(', ') : '52, 53',
+      pins: r.pins ? [].concat(r.pins).join(', ') : [r.pin1, r.pin2].filter(Boolean).join(', '),
       pin1: r.pin1 || '', pin2: r.pin2 || '',
       pin: r.pin || '', capacitance: r.capacitance || '',
       net: r.net || '', min_value: r.min_value || '', max_value: r.max_value || '',
@@ -231,13 +232,9 @@ function applyYamlData(data) {
         </template>
 
         <template v-else-if="r.type === 'pin_to_pin_connection'">
-          <div class="rf short">
-            <label>{{ t.yaml.fields.pin1 }}</label>
-            <input v-model="r.pin1" class="a-input" placeholder="e.g. 16" />
-          </div>
-          <div class="rf short">
-            <label>{{ t.yaml.fields.pin2 }}</label>
-            <input v-model="r.pin2" class="a-input" placeholder="e.g. 22" />
+          <div class="rf">
+            <label>{{ t.yaml.fields.pins }}</label>
+            <input v-model="r.pins" class="a-input" placeholder="e.g. 16, 22, 38" />
           </div>
         </template>
 

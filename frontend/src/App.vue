@@ -14,7 +14,11 @@ const activeTab = ref(0)
 
 const TAB_KEYS = ['upload', 'yaml', 'spec', 'mapping', 'results']
 
-const tabDisabled = (idx) => idx >= 3 ? !store.canCheck : false
+const tabDisabled = (idx) => {
+  if (idx === 3) return !store.canViewMapping
+  if (idx === 4) return !store.canCheck
+  return false
+}
 
 function selectTab(idx) {
   if (!tabDisabled(idx)) activeTab.value = idx
@@ -30,7 +34,7 @@ function selectTab(idx) {
           <span class="logo-text">
             <span class="logo-circuit">Circuit</span><span class="logo-checker">Checker</span>
           </span>
-          <span class="logo-version">rev0.3</span>
+          <span class="logo-version">Rev0.5.1</span>
         </div>
       </div>
 

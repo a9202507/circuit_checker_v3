@@ -262,29 +262,33 @@ def _check_pin_count(ref_des: str, rule: PinCountRule, pinmap: dict) -> dict:
 def _check_pin_to_pin_connection(ref_des: str, rule: PinToPinConnectionRule, pinmap: dict, equiv: dict[str, str] | None = None) -> dict:
     if equiv is None:
         equiv = {}
-    desc = rule.description or f"pin{rule.pin1} must connect to pin{rule.pin2}"
+    pins = rule.pins
+    pin_list = ", ".join(f"pin{p}" for p in pins)
+    desc = rule.description or f"{pin_list} must all connect to same net"
     ic_pins = pinmap.get(ref_des, {})
-    net1 = ic_pins.get(rule.pin1)
-    net2 = ic_pins.get(rule.pin2)
 
-    if net1 is None:
-        return {"rule_type": "pin_to_pin_connection", "description": desc,
-                "status": rule.severity.upper(),
-                "detail": f"pin{rule.pin1} not found in netlist"}
-    if net2 is None:
-        return {"rule_type": "pin_to_pin_connection", "description": desc,
-                "status": rule.severity.upper(),
-                "detail": f"pin{rule.pin2} not found in netlist"}
+    # Collect net for each pin; report first missing pin found
+    nets = {}
+    for p in pins:
+        net = ic_pins.get(p)
+        if net is None:
+            return {"rule_type": "pin_to_pin_connection", "description": desc,
+                    "status": rule.severity.upper(),
+                    "detail": f"pin{p} not found in netlist"}
+        nets[p] = net
 
-    net1_resolved = _resolve(net1, equiv)
-    net2_resolved = _resolve(net2, equiv)
+    resolved = {p: _resolve(net, equiv) for p, net in nets.items()}
+    unique_nets = set(resolved.values())
 
-    if net1_resolved == net2_resolved:
+    if len(unique_nets) == 1:
         return {"rule_type": "pin_to_pin_connection", "description": desc,
-                "status": "PASS", "detail": f"Both pins on equivalent net {net1_resolved}"}
+                "status": "PASS",
+                "detail": f"All pins on equivalent net {next(iter(unique_nets))}"}
+
+    detail_parts = [f"pin{p}={nets[p]}" for p in pins]
     return {"rule_type": "pin_to_pin_connection", "description": desc,
             "status": rule.severity.upper(),
-            "detail": f"pin{rule.pin1} on {net1}, pin{rule.pin2} on {net2}"}
+            "detail": "Pins on different nets: " + ", ".join(detail_parts)}
 
 
 def _check_pin_to_gnd_cap(

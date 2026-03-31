@@ -62,3 +62,5 @@ python 請用uv 管理環境，且使用3.12
 其中包含此IC各pin腳對應的變化
 例如 TDA38806 pin6 fb voltage=0.6V 可用它及外部電阻回推輸出電壓是否符合rail_name.spec中的vout電壓規格。
 例如 tda38806 pin12 mode pin ，接地電阻為 0ohm 時 此時為1.1Mhz 下的FCCM mode。30.1Kohms的話就是2Mhz的FCCM , 60.4Kohms就是600Khz FCCM
+
+# 使用podman 打包時，請打包arm64 and linux/amd64二個版本一起控包

@@ -40,7 +40,7 @@ const messages = {
       },
       spec: {
         title: 'Spec Files (.spec)',
-        sub: 'Optional — rail specs (P1V8_AUX.spec) and IC specs (TDA38806.spec)',
+        sub: 'Optional — rail specs (circuit_railname.spec) and IC specs (device_part_number.spec)',
         btn: 'Select Files',
         loaded: '{n} spec file(s) loaded',
       },
@@ -56,7 +56,7 @@ const messages = {
     mapping: {
       title: 'IC Mapping',
       hint: 'Select the ICs to verify, assign a rule YAML to each, then run the check.',
-      search: 'Search RefDes / Component…',
+      search: 'Search or filter (e.g. U*; PU*)',
       bulkSelect: 'Bulk assign rule…',
       applyBtn: 'Apply to selected',
       th: {
@@ -84,8 +84,8 @@ const messages = {
       title: 'Spec Editor',
       hint: 'Create or edit Rail Spec (.spec) files and IC Spec (.spec) files. Download or upload them to the current session.',
       subTabs: {
-        rail: 'Rail Spec (P1V8_AUX.spec)',
-        ic:   'IC Spec (TDA38806.spec)',
+        rail: 'Rail Spec (circuit_railname.spec)',
+        ic:   'IC Spec (device_part_number.spec)',
       },
       rail: {
         loadLabel: 'Load existing:',
@@ -165,6 +165,7 @@ const messages = {
       noRules: 'No rules yet. Click "Add Rule" to start.',
       fields: {
         validPins: 'Valid PIN count (comma-separated)',
+        pins: 'PINs (comma-separated)',
         pin1: 'PIN 1',
         pin2: 'PIN 2',
         pin: 'PIN',
@@ -199,7 +200,7 @@ const messages = {
       next: 'Next: IC Mapping →',
       ruleTypes: [
         { value: 'pin_count',            label: 'pin_count — Validate total PIN count' },
-        { value: 'pin_to_pin_connection', label: 'pin_to_pin_connection — Two PINs on same net' },
+        { value: 'pin_to_pin_connection', label: 'pin_to_pin_connection — Multiple PINs on same net' },
         { value: 'pin_to_gnd_cap',       label: 'pin_to_gnd_cap — PIN to GND capacitor (exact)' },
         { value: 'pin_to_pin_cap',       label: 'pin_to_pin_cap — Capacitor between two PINs' },
         { value: 'pin_floating',         label: 'pin_floating — PIN must be floating' },
@@ -254,7 +255,7 @@ const messages = {
       },
       spec: {
         title: 'Spec 參數檔 (.spec)',
-        sub: '選填 — rail 規格檔（P1V8_AUX.spec）及 IC 參數檔（TDA38806.spec）',
+        sub: '選填 — rail 規格檔（circuit_railname.spec）及 IC 參數檔（device_part_number.spec）',
         btn: '選擇檔案',
         loaded: '已載入 {n} 個 spec 檔',
       },
@@ -270,7 +271,7 @@ const messages = {
     mapping: {
       title: 'IC 對應設定',
       hint: '勾選要檢查的 IC，並為每個 IC 指定規則 YAML 檔案，然後執行檢查。',
-      search: '搜尋 RefDes / 元件型號…',
+      search: '搜尋或篩選（例如 U*; PU*）',
       bulkSelect: '批次指定規則…',
       applyBtn: '套用至已選',
       th: {
@@ -298,8 +299,8 @@ const messages = {
       title: 'Spec 編輯器',
       hint: '建立或編輯 Rail Spec (.spec) 及 IC Spec (.spec) 檔案，下載後可直接上傳至工作階段使用。',
       subTabs: {
-        rail: 'Rail Spec（P1V8_AUX.spec）',
-        ic:   'IC Spec（TDA38806.spec）',
+        rail: 'Rail Spec（circuit_railname.spec）',
+        ic:   'IC Spec（device_part_number.spec）',
       },
       rail: {
         loadLabel: '載入現有：',
@@ -379,6 +380,7 @@ const messages = {
       noRules: '尚未新增規則，點擊「新增規則」開始。',
       fields: {
         validPins: '有效 PIN 數（逗號分隔）',
+        pins: 'PIN 腳（逗號分隔）',
         pin1: 'PIN 1',
         pin2: 'PIN 2',
         pin: 'PIN',
@@ -413,7 +415,7 @@ const messages = {
       next: '下一步：IC 對應設定 →',
       ruleTypes: [
         { value: 'pin_count',            label: 'pin_count - 總 PIN 數驗證' },
-        { value: 'pin_to_pin_connection', label: 'pin_to_pin_connection - 兩 PIN 相連' },
+        { value: 'pin_to_pin_connection', label: 'pin_to_pin_connection - 多 PIN 相連' },
         { value: 'pin_to_gnd_cap',       label: 'pin_to_gnd_cap - PIN 接電容到 GND（精確值）' },
         { value: 'pin_to_pin_cap',       label: 'pin_to_pin_cap - 兩 PIN 間接電容' },
         { value: 'pin_floating',         label: 'pin_floating - PIN 需空接' },

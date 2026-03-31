@@ -17,6 +17,8 @@ export const useAppStore = defineStore('app', {
     isChecking: false,
   }),
   getters: {
+    canViewMapping: (state) =>
+      state.ascLoaded && state.bomLoaded,
     canCheck: (state) =>
       state.ascLoaded && state.bomLoaded && state.yamlFiles.length > 0,
     // Build a refDes → railSpec lookup for RuleMapping UI

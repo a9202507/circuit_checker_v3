@@ -393,7 +393,7 @@ def _generate_html_report(req: ExportRequest, asc_filename: str, bom_filename: s
 </head>
 <body>
   <div class="card">
-    <h1><span style="color:#009B77">Circuit</span><span style="color:#1A1A2E">Checker</span> &nbsp;<span style="font-size:15px;font-weight:400;color:#777">— Circuit Check Report</span></h1>
+    <h1><span style="color:#009B77">Circuit</span><span style="color:#1A1A2E">Checker</span> &nbsp;<span style="font-size:13px;font-weight:500;color:#009B77;background:#E6F7F3;border-radius:4px;padding:2px 8px">Rev0.5.1</span> &nbsp;<span style="font-size:15px;font-weight:400;color:#777">— Circuit Check Report</span></h1>
     <div class="meta" style="margin-top:6px">Exported: {export_dt} &nbsp;|&nbsp; Netlist: {asc_filename} &nbsp;|&nbsp; BOM: {bom_filename}</div>
     <div class="meta" style="margin-top:6px">Rule YAML files:<ul>{yaml_list}</ul></div>
   </div>
@@ -440,6 +440,12 @@ async def export_report(req: ExportRequest):
         zf.writestr(bom_filename, bom_content)
         for yaml_file in req.yaml_files_used:
             zf.writestr(yaml_file, store["yaml_contents"].get(yaml_file, ""))
+        for fname, content in store["rail_spec_contents"].items():
+            zf.writestr(fname, content)
+        for component, content in store["ic_spec_contents"].items():
+            zf.writestr(f"{component}.spec", content)
+        for fname, content in store["regpair_contents"].items():
+            zf.writestr(fname, content)
         zf.writestr(report_name, html)
     buf.seek(0)
 
